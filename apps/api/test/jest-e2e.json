@@ -1,0 +1,18 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^uuid$": "<rootDir>/__mocks__/uuid.ts"
+  },
+  "transformIgnorePatterns": [
+    "node_modules/(?!(htmlparser2|domhandler|domutils|domelementtype|dom-serializer|entities)/)"
+  ],
+  "testTimeout": 60000,
+  "forceExit": true,
+  "maxWorkers": 1
+}

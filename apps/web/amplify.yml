@@ -1,0 +1,53 @@
+version: 1
+applications:
+  - appRoot: apps/web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+        build:
+          commands:
+            # Amplify sets $AWS_BRANCH automatically.
+            # main → production config; dev → dev config
+            - |
+              if [ "$AWS_BRANCH" = "main" ]; then
+                npm run build -- --configuration production
+              else
+                npm run build -- --configuration dev
+              fi
+      artifacts:
+        baseDirectory: dist/web/browser
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+    customHeaders:
+      - pattern: '**/*'
+        headers:
+          - key: Strict-Transport-Security
+            value: max-age=31536000; includeSubDomains
+          - key: X-Content-Type-Options
+            value: nosniff
+          - key: X-Frame-Options
+            value: DENY
+          # Mirrors infra/lib/frontend-stack.ts's CDK-managed app-level
+          # headers — kept in sync, though live testing confirmed the
+          # CDK-managed App-level customHeaders is what actually takes
+          # effect for this project's zip-upload deploy flow (see
+          # infra/scripts/deploy-frontend.sh); Amplify doesn't process this
+          # build-spec file for a manual deployment since the build phase
+          # never runs. Kept here for parity in case a git-based build is
+          # ever wired up. 'unsafe-hashes' + the sha256 entry allowlists
+          # ONE inline onload handler Angular's production build injects on
+          # the Google Fonts <link> — not our source, and far narrower than
+          # 'unsafe-inline'.
+          - key: Content-Security-Policy
+            value: >-
+              default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc=' https://www.google.com https://www.gstatic.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.mybharatconnects.com https://js.stripe.com https://api.stripe.com https://www.google.com; frame-src https://js.stripe.com https://hooks.stripe.com https://www.google.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'
+    # SPA fallback — all 404s return index.html so Angular router works
+    redirects:
+      - source: '</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp|webmanifest)$)([^.]+$)/>'
+        target: /index.html
+        status: '200'
