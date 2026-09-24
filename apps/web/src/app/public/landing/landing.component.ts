@@ -218,7 +218,7 @@ interface PublicTestimonial {
 
       <!-- ══ SERVICES ══ -->
       <section class="px-4 sm:px-6 lg:px-10 py-16 sm:py-20" style="background: var(--ivory-soft)" id="services">
-        <div class="max-w-[1400px] mx-auto">
+        <div class="w-full">
           <header appReveal class="max-w-2xl mb-12">
             <p class="bb-eyebrow">What we do</p>
             <h2 class="bb-h2">Everything you need. One platform.</h2>
