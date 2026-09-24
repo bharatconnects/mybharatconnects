@@ -20,6 +20,11 @@ export interface ServiceVertical {
   icon: string; // material icon
   blurb: string;
   services: ServiceDef[];
+  /** Hero banner photo path under apps/web/public/ — falls back to an
+   * accent-colored gradient (service-detail.component.ts) when the file
+   * isn't present yet, same graceful-fallback pattern as the landing
+   * page's /hero.png. */
+  bannerImage: string;
 }
 
 export const SERVICE_VERTICALS: ServiceVertical[] = [
@@ -27,6 +32,7 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     slug: 'tax-compliance',
     name: 'Tax & Compliance',
     icon: 'account_balance',
+    bannerImage: '/service-tax-compliance.jpg',
     blurb:
       'India and US tax filings, repatriation certificates, notice responses, and cross-border compliance — handled end-to-end by empanelled CAs.',
     services: [
@@ -50,6 +56,7 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     slug: 'wealth-management',
     name: 'Wealth Management',
     icon: 'trending_up',
+    bannerImage: '/service-wealth-management.jpg',
     blurb:
       'Investments, insurance, loans, and goal-based planning built for the NRI balance sheet — from mutual fund onboarding to GIFT-City advisory.',
     services: [
@@ -69,6 +76,7 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     slug: 'real-estate',
     name: 'Real Estate',
     icon: 'home_work',
+    bannerImage: '/service-real-estate.jpg',
     blurb:
       'Property management, sale, estate planning, and curated investment for NRI-owned real estate across India.',
     services: [
@@ -93,6 +101,7 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     slug: 'legal-documents',
     name: 'Legal Documents',
     icon: 'gavel',
+    bannerImage: '/service-legal-documents.jpg',
     blurb:
       'Succession, property transfer, mutation, banking claims, and repatriation paperwork — court and authority work handled locally on your behalf.',
     services: [

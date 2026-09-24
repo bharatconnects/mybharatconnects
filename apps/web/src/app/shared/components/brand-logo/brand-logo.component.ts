@@ -121,7 +121,7 @@ import { CommonModule } from '@angular/common';
       .bb-logo-tagline {
         font-family: 'Inter', sans-serif;
         font-weight: 500;
-        font-size: calc(var(--bb-logo-size) * 0.145);
+        font-size: clamp(9px, calc(var(--bb-logo-size) * 0.145), 16px);
         letter-spacing: 0.34em;
         text-transform: uppercase;
         color: var(--ink-60, rgba(22, 40, 60, 0.6));

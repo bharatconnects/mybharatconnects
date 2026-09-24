@@ -24,7 +24,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
         </a>
 
         <div class="hidden lg:block max-w-md">
-          <p class="font-mono text-[10px] tracking-widest text-accent mb-4">
+          <p class="font-mono text-[13px] tracking-widest text-accent mb-4">
             TRUSTED NRI REAL ESTATE PLATFORM
           </p>
           <h2 class="font-serif text-4xl xl:text-5xl font-light leading-[1.1] mb-6">
@@ -53,14 +53,14 @@ const RESEND_COOLDOWN_SECONDS = 30;
         </p>
       </aside>
 
-      <!-- Fixed top-left on mobile/tablet — desktop already has the logo link in the aside -->
+      <!-- Fixed top-left on mobile/tablet — desktop gets its own copy inside the form panel below (the aside's logo sits in the same corner, so this can't also render there without overlapping it) -->
       <a
         routerLink="/"
         class="lg:hidden fixed top-4 left-4 z-20 bb-btn bb-btn-ghost bb-btn-sm"
         aria-label="Back to home"
       >
         <i class="material-icons-outlined text-base">arrow_back</i>
-        <span>Home</span>
+        <span>Back</span>
       </a>
 
       <!-- ── Form panel (right on desktop, below on mobile) ── -->
@@ -68,8 +68,28 @@ const RESEND_COOLDOWN_SECONDS = 30;
         class="flex flex-col justify-start px-6 sm:px-12 lg:px-16 pt-16 sm:pt-10 lg:pt-14 pb-6 sm:pb-8 lg:pb-10 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none overflow-y-auto scrollbar-none"
       >
         <div class="w-full max-w-lg mx-auto lg:mx-0">
+          <div class="hidden lg:flex items-center justify-between mb-8 gap-4">
+            <a
+              routerLink="/"
+              class="inline-flex bb-btn bb-btn-ghost bb-btn-sm shrink-0"
+              aria-label="Back to home"
+            >
+              <i class="material-icons-outlined text-base">arrow_back</i>
+              <span>Back</span>
+            </a>
+
+            @if (step === 'credentials') {
+              <p class="text-sm font-medium text-base-content/80">
+                Don't have an account?
+                <a routerLink="/auth/register" class="text-primary font-bold hover:underline"
+                  >Create one</a
+                >
+              </p>
+            }
+          </div>
+
           <header class="mb-6 sm:mb-8">
-            <p class="font-mono text-xs font-semibold tracking-widest text-primary mb-2">
+            <p class="font-mono text-[13px] font-semibold tracking-widest text-primary mb-2">
               {{ step === 'credentials' ? 'WELCOME BACK' : 'VERIFY IDENTITY' }}
             </p>
             <h1 class="font-serif text-2xl sm:text-4xl font-light leading-tight text-base-content">
@@ -219,7 +239,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
                 Continue with Google
               </button>
 
-              <p class="text-center text-base font-medium text-base-content/80 mt-3">
+              <p class="lg:hidden text-center text-base font-medium text-base-content/80 mt-3">
                 Don't have an account?
                 <a routerLink="/auth/register" class="text-primary font-bold hover:underline"
                   >Create one</a

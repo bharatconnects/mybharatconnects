@@ -46,7 +46,18 @@ const SERVICES: ServiceCard[] = SERVICE_VERTICALS.map((v) => ({
         style="background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(217,119,6,0.08) 0%, transparent 60%), var(--ivory)"
       >
         <div class="max-w-3xl mx-auto text-center">
-          <p class="font-mono text-[11px] tracking-widest text-[var(--saffron)] mb-4 uppercase">
+          <nav aria-label="Breadcrumb" class="mb-6">
+            <ol class="flex items-center justify-center gap-2 text-sm text-[var(--ink)]/60">
+              <li>
+                <a routerLink="/" class="hover:text-[var(--saffron-deep)] transition-colors"
+                  >Home</a
+                >
+              </li>
+              <li aria-hidden="true">/</li>
+              <li aria-current="page" class="font-semibold text-[var(--ink)]">Services</li>
+            </ol>
+          </nav>
+          <p class="font-mono text-[15px] tracking-widest text-[var(--saffron)] mb-4 uppercase">
             Everything You Need
           </p>
           <h1
@@ -126,7 +137,7 @@ const SERVICES: ServiceCard[] = SERVICE_VERTICALS.map((v) => ({
         style="background: var(--ink)"
       >
         <div class="max-w-2xl mx-auto">
-          <p class="font-mono text-[11px] tracking-widest text-[var(--saffron)] mb-4 uppercase">
+          <p class="font-mono text-[15px] tracking-widest text-[var(--saffron)] mb-4 uppercase">
             Get Started
           </p>
           <h2

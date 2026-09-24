@@ -43,7 +43,7 @@ interface PublicTestimonial {
   template: `
     <!-- Ticker -->
     <div
-      class="bg-[var(--ink)] text-[var(--ivory)] overflow-hidden whitespace-nowrap py-2 text-[11px] font-medium tracking-[0.14em] uppercase"
+      class="bg-[var(--ivory-mute)] text-[var(--ink)] overflow-hidden whitespace-nowrap py-2 text-[11px] font-medium tracking-[0.14em] uppercase"
     >
       <div class="inline-block bb-ticker-track">
         @for (v of verticals; track v.slug) {
@@ -603,13 +603,13 @@ interface PublicTestimonial {
         class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20 text-center"
         style="background: linear-gradient(135deg, var(--saffron) 0%, var(--saffron-hover) 100%)"
       >
-        <p class="text-[11px] font-semibold tracking-[0.22em] uppercase mb-4" style="color: var(--navy-900)">
+        <p class="text-[15px] font-semibold tracking-[0.22em] uppercase mb-4" style="color: #ffffff">
           Take the first step
         </p>
         <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[var(--navy-900)] mb-3 leading-[1.15] tracking-tight">
           Ready to put India on autopilot?
         </h2>
-        <p class="mb-8 text-base" style="color: rgba(12,33,53,0.92)">
+        <p class="mb-8 text-base" style="color: #ffffff">
           Join 100+ NRIs who trust MyBharatConnects across tax, wealth, property, and legal.
         </p>
         <a
@@ -643,16 +643,16 @@ interface PublicTestimonial {
         }
       }
       .bb-ticker-link {
-        color: var(--ivory);
+        color: var(--ink);
         text-decoration: none;
-        opacity: 0.75;
+        opacity: 0.65;
         transition:
           opacity 0.15s ease,
           color 0.15s ease;
       }
       .bb-ticker-link:hover {
         opacity: 1;
-        color: var(--saffron);
+        color: var(--saffron-deep);
       }
 
       /* ═══ Hero panel ═══
@@ -721,7 +721,7 @@ interface PublicTestimonial {
 
       .bb-hero-eyebrow {
         display: inline-block;
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 700;
         letter-spacing: 0.18em;
         text-transform: uppercase;
@@ -882,7 +882,7 @@ interface PublicTestimonial {
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        font-size: 13.5px;
+        font-size: 15px;
         font-weight: 600;
         color: rgba(255, 255, 255, 0.92);
       }
@@ -900,7 +900,7 @@ interface PublicTestimonial {
 
       /* ═══ Shared type scale ═══ */
       .bb-eyebrow {
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 700;
         letter-spacing: 0.18em;
         text-transform: uppercase;
@@ -908,7 +908,7 @@ interface PublicTestimonial {
         margin: 0 0 14px;
       }
       .bb-eyebrow-light {
-        font-size: 11px;
+        font-size: 14px;
         font-weight: 700;
         letter-spacing: 0.18em;
         text-transform: uppercase;

@@ -18,7 +18,7 @@ import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-log
 
       <section class="card w-full max-w-md bg-base-100 shadow-sm border border-base-300">
         <header class="px-6 sm:px-9 pt-8 pb-6 border-b border-base-300">
-          <p class="font-mono text-[10px] tracking-widest text-primary mb-2">PASSWORD RESET</p>
+          <p class="font-mono text-[13px] tracking-widest text-primary mb-2">PASSWORD RESET</p>
           <h1 class="font-serif text-2xl font-light text-base-content leading-tight">Forgot your password?</h1>
           <p class="text-sm text-base-content/70 mt-2">
             Enter your email and we'll send you a link to reset your password.

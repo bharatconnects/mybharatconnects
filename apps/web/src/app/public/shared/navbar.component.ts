@@ -371,20 +371,8 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
           class="inline-flex items-center"
           (click)="closeMobileMenu()"
         >
-          <app-brand-logo
-            variant="lockup"
-            [size]="36"
-            [onDark]="immersive && !scrolled"
-            [monochrome]="immersive && !scrolled"
-            class="hidden sm:inline-flex"
-          ></app-brand-logo>
-          <app-brand-logo
-            variant="lockup"
-            [size]="28"
-            [onDark]="immersive && !scrolled"
-            [monochrome]="immersive && !scrolled"
-            class="sm:hidden"
-          ></app-brand-logo>
+          <app-brand-logo variant="lockup" [size]="36" class="hidden sm:inline-flex"></app-brand-logo>
+          <app-brand-logo variant="lockup" [size]="28" class="sm:hidden"></app-brand-logo>
         </a>
       </div>
       <nav class="flex items-center gap-6 sm:gap-9 text-base font-semibold" aria-label="Primary">

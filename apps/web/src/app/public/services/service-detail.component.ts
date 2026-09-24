@@ -14,6 +14,13 @@ import {
  * verticals, with delivery steps where the engagement follows a fixed
  * sequence. Content is fully driven by the shared service catalog.
  */
+const VERTICAL_ACCENTS: Record<string, string> = {
+  'tax-compliance': '#1f4e79',
+  'wealth-management': '#c95f10',
+  'real-estate': '#2a6399',
+  'legal-documents': '#a54c0b',
+};
+
 @Component({
   selector: 'app-service-detail',
   standalone: true,
@@ -37,8 +44,19 @@ import {
               <span class="text-[var(--ink)]/80">{{ v.name }}</span>
             </nav>
 
-            <div class="bb-vertical-icon mx-auto mb-6">
-              <i class="material-icons-outlined" aria-hidden="true">{{ v.icon }}</i>
+            <div
+              class="bb-vertical-banner mb-8"
+              [style]="
+                'background-image: linear-gradient(180deg, rgba(12,33,53,0.15) 0%, rgba(12,33,53,0.45) 100%), url(' +
+                v.bannerImage +
+                '), linear-gradient(135deg, ' +
+                accentFor(v.slug) +
+                ' 0%, var(--navy-900) 100%)'
+              "
+            >
+              <div class="bb-vertical-icon">
+                <i class="material-icons-outlined" aria-hidden="true">{{ v.icon }}</i>
+              </div>
             </div>
             <h1
               class="font-serif font-light text-[var(--ink)] text-4xl sm:text-5xl leading-[1.1] mb-5"
@@ -54,7 +72,7 @@ import {
         <!-- ── Services in this vertical ── -->
         <section class="px-6 sm:px-8 lg:px-12 py-14" style="background: var(--ivory)">
           <div class="max-w-5xl mx-auto">
-            <p class="font-mono text-[11px] tracking-widest text-[var(--saffron-deep)] mb-6 uppercase">
+            <p class="font-mono text-[15px] tracking-widest text-[var(--saffron-deep)] mb-6 uppercase">
               Services in this vertical
             </p>
 
@@ -122,7 +140,7 @@ import {
           style="background: var(--ink)"
         >
           <div class="max-w-2xl mx-auto">
-            <p class="font-mono text-[11px] tracking-widest text-[var(--saffron)] mb-4 uppercase">
+            <p class="font-mono text-[15px] tracking-widest text-[var(--saffron)] mb-4 uppercase">
               Get Started
             </p>
             <h2
@@ -147,6 +165,24 @@ import {
   `,
   styles: [
     `
+      /* Category banner — a real photo when the vertical's bannerImage file
+       * exists (drop it into apps/web/public/), falling back to an
+       * accent-colored gradient otherwise so there is never a broken-image
+       * state — same graceful-fallback pattern as the landing hero's
+       * /hero.png. */
+      .bb-vertical-banner {
+        position: relative;
+        height: 200px;
+        border-radius: 20px;
+        overflow: hidden;
+        background-size: cover, cover, cover;
+        background-position: center, center, center;
+        background-repeat: no-repeat;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 20px;
+      }
       .bb-vertical-icon {
         display: inline-flex;
         align-items: center;
@@ -154,8 +190,9 @@ import {
         width: 64px;
         height: 64px;
         border-radius: 18px;
-        background: var(--navy-50);
+        background: rgba(255, 255, 255, 0.95);
         color: var(--brand-navy);
+        box-shadow: 0 8px 24px rgba(12, 33, 53, 0.25);
       }
       .bb-vertical-icon i {
         font-size: 32px;
@@ -283,6 +320,10 @@ import {
 export class ServiceDetailComponent implements OnInit {
   vertical: ServiceVertical | null = null;
   otherVerticals: ServiceVertical[] = [];
+
+  accentFor(slug: string): string {
+    return VERTICAL_ACCENTS[slug] ?? '#1f4e79';
+  }
 
   constructor(
     private route: ActivatedRoute,

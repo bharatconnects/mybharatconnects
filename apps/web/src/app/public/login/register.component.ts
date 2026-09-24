@@ -35,7 +35,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
         </a>
 
         <div class="hidden lg:block max-w-md">
-          <p class="font-mono text-[10px] tracking-widest text-accent mb-3">CREATE YOUR ACCOUNT</p>
+          <p class="font-mono text-[13px] tracking-widest text-accent mb-3">CREATE YOUR ACCOUNT</p>
           <h2 class="font-serif text-4xl xl:text-5xl font-light leading-[1.1] mb-6">
             Get started in<br />
             <em class="italic text-accent">60 seconds.</em>
@@ -65,14 +65,14 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
         </p>
       </aside>
 
-      <!-- Fixed top-left on mobile/tablet — desktop already has the logo link in the aside -->
+      <!-- Fixed top-left on mobile/tablet — desktop gets its own copy inside the form panel below (the aside's logo sits in the same corner, so this can't also render there without overlapping it) -->
       <a
         routerLink="/"
         class="lg:hidden fixed top-4 left-4 z-20 bb-btn bb-btn-ghost bb-btn-sm"
         aria-label="Back to home"
       >
         <i class="material-icons-outlined text-base">arrow_back</i>
-        <span>Home</span>
+        <span>Back</span>
       </a>
 
       <!-- ── Form panel ── -->
@@ -80,10 +80,21 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
         class="flex flex-col justify-start lg:justify-center px-6 sm:px-12 lg:px-16 pt-16 sm:pt-8 lg:pt-10 pb-6 sm:pb-8 lg:pb-10 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none overflow-y-auto scrollbar-none"
       >
         <div class="w-full max-w-lg sm:max-w-2xl lg:max-w-lg mx-auto lg:mx-0">
-          <p class="text-sm sm:text-base font-medium text-base-content/80 mb-3 sm:mb-6">
-            Already have an account?
-            <a routerLink="/auth/login" class="text-primary font-bold hover:underline">Sign in</a>
-          </p>
+          <div class="flex items-center justify-between mb-3 sm:mb-6 gap-4">
+            <a
+              routerLink="/"
+              class="hidden lg:inline-flex bb-btn bb-btn-ghost bb-btn-sm shrink-0"
+              aria-label="Back to home"
+            >
+              <i class="material-icons-outlined text-base">arrow_back</i>
+              <span>Back</span>
+            </a>
+
+            <p class="text-sm sm:text-base font-medium text-base-content/80">
+              Already have an account?
+              <a routerLink="/auth/login" class="text-primary font-bold hover:underline">Sign in</a>
+            </p>
+          </div>
 
           @if (successMessage) {
             <div role="status" class="alert alert-success text-sm mb-5">

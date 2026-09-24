@@ -19,16 +19,12 @@ import { SERVICE_VERTICALS } from '../../shared/data/service-catalog';
           </p>
           <address class="flex flex-col gap-2 mt-4 not-italic">
             <a
-              href="mailto:hello@mybharatconnects.com"
+              href="mailto:info@mybharatconnects.com"
               class="flex items-center gap-2 text-sm opacity-55 hover:opacity-100 transition w-fit"
             >
               <i class="material-icons-outlined text-base" aria-hidden="true">email</i>
-              hello&#64;mybharatconnects.com
+              info&#64;mybharatconnects.com
             </a>
-            <span class="flex items-center gap-2 text-sm opacity-55">
-              <i class="material-icons-outlined text-base" aria-hidden="true">public</i>
-              mybharatconnects.com
-            </span>
           </address>
         </div>
         <nav aria-label="Services" class="flex flex-col gap-1">

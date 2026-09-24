@@ -18,7 +18,7 @@ import { FooterComponent } from '../shared/footer.component';
       >
         <div class="max-w-xl mx-auto text-center">
           <p
-            class="text-[11px] font-semibold tracking-[0.18em] uppercase mb-4"
+            class="text-[15px] font-semibold tracking-[0.18em] uppercase mb-4"
             style="color: var(--saffron-deep)"
           >
             MyBharatConnects Blog

@@ -73,7 +73,7 @@ const OFFERS: Offer[] = [
         style="background: radial-gradient(ellipse 80% 55% at 50% -10%, rgba(31,78,121,0.1) 0%, transparent 60%), var(--ivory)"
       >
         <div class="max-w-3xl mx-auto text-center">
-          <p appReveal class="font-mono text-[11px] tracking-widest text-[var(--saffron-deep)] mb-4 uppercase">
+          <p appReveal class="font-mono text-[15px] tracking-widest text-[var(--saffron-deep)] mb-4 uppercase">
             About My Bharat Connects
           </p>
           <h1
@@ -131,7 +131,7 @@ const OFFERS: Offer[] = [
       <section class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20" style="background: var(--ivory)">
         <div class="max-w-5xl mx-auto">
           <header appReveal class="text-center mb-12 max-w-xl mx-auto">
-            <p class="font-mono text-[11px] tracking-[0.22em] text-[var(--saffron-deep)] mb-4">
+            <p class="font-mono text-[15px] tracking-[0.22em] text-[var(--saffron-deep)] mb-4">
               LEADERSHIP
             </p>
             <h2 class="font-serif text-3xl sm:text-4xl font-light text-[var(--ink)] leading-[1.15]">
@@ -142,12 +142,16 @@ const OFFERS: Offer[] = [
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             @for (f of founders; track f.name; let i = $index) {
               <div class="bb-founder-card" appReveal [revealDelay]="i * 90">
-                <img [src]="f.photo" [alt]="f.name" class="bb-founder-photo" />
-                <h3 class="font-semibold text-[var(--ink)] text-lg mt-5 mb-1">{{ f.name }}</h3>
-                <p class="text-xs font-medium text-[var(--saffron-deep)] uppercase tracking-wide mb-4">
-                  {{ f.role }}
-                </p>
-                <p class="text-sm text-[var(--ink)]/70 leading-relaxed mb-4">{{ f.bio }}</p>
+                <div class="bb-founder-header">
+                  <img [src]="f.photo" [alt]="f.name" class="bb-founder-photo" />
+                  <div>
+                    <h3 class="font-semibold text-[var(--ink)] text-lg mb-1">{{ f.name }}</h3>
+                    <p class="text-xs font-medium text-[var(--saffron-deep)] uppercase tracking-wide">
+                      {{ f.role }}
+                    </p>
+                  </div>
+                </div>
+                <p class="text-sm text-[var(--ink)]/70 leading-relaxed mb-4 mt-4">{{ f.bio }}</p>
                 <p class="font-serif italic text-[var(--ink)]/85 text-[15px] leading-snug">
                   "{{ f.quote }}"
                 </p>
@@ -161,7 +165,7 @@ const OFFERS: Offer[] = [
       <section class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20" style="background: var(--ivory-soft)">
         <div class="max-w-5xl mx-auto">
           <header appReveal class="text-center mb-12 max-w-xl mx-auto">
-            <p class="font-mono text-[11px] tracking-[0.22em] text-[var(--saffron-deep)] mb-4">
+            <p class="font-mono text-[15px] tracking-[0.22em] text-[var(--saffron-deep)] mb-4">
               WHAT WE OFFER
             </p>
             <h2 class="font-serif text-3xl sm:text-4xl font-light text-[var(--ink)] leading-[1.15]">
@@ -193,7 +197,7 @@ const OFFERS: Offer[] = [
             At My Bharat Connects, we stand beside you — in your time zone, in your language — and
             make sure India feels close again.
           </p>
-          <p class="font-mono text-[11px] tracking-[0.22em] text-[var(--saffron)] mb-4 uppercase">
+          <p class="font-mono text-[15px] tracking-[0.22em] text-[var(--saffron)] mb-4 uppercase">
             Ready to talk?
           </p>
           <h2 class="font-serif text-2xl sm:text-3xl font-light text-[var(--ivory)] mb-8 leading-snug">
@@ -252,11 +256,18 @@ const OFFERS: Offer[] = [
         transform: translateY(-3px);
         box-shadow: 0 12px 28px rgba(12, 33, 53, 0.09);
       }
+      .bb-founder-header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
       .bb-founder-photo {
-        width: 100px;
-        height: 100px;
+        width: 84px;
+        height: 84px;
+        flex-shrink: 0;
         border-radius: 50%;
         object-fit: cover;
+        object-position: top center;
         border: 3px solid var(--ivory-soft);
         box-shadow: 0 2px 8px rgba(12, 33, 53, 0.12);
       }
