@@ -26,21 +26,83 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink, BrandLogoComponent],
   template: `
-    <main class="min-h-screen bg-base-100 flex flex-col items-center justify-center p-4 sm:p-8">
-      <a class="mb-8 sm:mb-10 inline-flex" routerLink="/" aria-label="MyBharatConnects home">
-        <app-brand-logo variant="lockup" [size]="38"></app-brand-logo>
+    <main class="h-screen overflow-hidden grid lg:grid-cols-2 bg-base-100">
+      <!-- ── Brand panel (desktop only — mobile gets a compact back-to-home link instead) ── -->
+      <aside
+        class="hidden lg:flex lg:flex-col lg:justify-between lg:p-12 lg:h-screen bg-neutral text-neutral-content"
+      >
+        <a routerLink="/" class="inline-flex items-center" aria-label="MyBharatConnects home">
+          <app-brand-logo variant="lockup" [size]="38" [onDark]="true"></app-brand-logo>
+        </a>
+
+        <div class="hidden lg:block max-w-md">
+          <p class="font-mono text-[13px] tracking-widest text-accent mb-4">
+            TRUSTED NRI REAL ESTATE PLATFORM
+          </p>
+          <h2 class="font-serif text-4xl xl:text-5xl font-light leading-[1.1] mb-6">
+            Your Property.<br />
+            <em class="italic text-accent">Our Expertise.</em><br />
+            Your Peace of Mind.
+          </h2>
+          <ul class="space-y-3 text-sm">
+            <li class="flex items-center gap-3 opacity-90">
+              <i class="material-icons-outlined text-accent" aria-hidden="true">check_circle</i>
+              <span>500+ NRI clients across 10+ Indian cities</span>
+            </li>
+            <li class="flex items-center gap-3 opacity-90">
+              <i class="material-icons-outlined text-accent" aria-hidden="true">check_circle</i>
+              <span>&#8377;500Cr+ in property managed end-to-end</span>
+            </li>
+            <li class="flex items-center gap-3 opacity-90">
+              <i class="material-icons-outlined text-accent" aria-hidden="true">check_circle</i>
+              <span>Dedicated advisor from day one</span>
+            </li>
+          </ul>
+        </div>
+
+        <p class="hidden lg:block text-xs opacity-50">
+          © 2026 MyBharatConnects. All rights reserved.
+        </p>
+      </aside>
+
+      <!-- Fixed top-left on mobile/tablet — desktop gets its own copy inside the form panel below -->
+      <a
+        routerLink="/"
+        class="lg:hidden fixed top-4 left-4 z-20 bb-btn bb-btn-ghost bb-btn-sm"
+        aria-label="Back to home"
+      >
+        <i class="material-icons-outlined text-base">arrow_back</i>
+        <span>Back</span>
       </a>
 
-      <section class="card w-full max-w-md bg-base-100 shadow-sm border border-base-300">
-        <header class="px-6 sm:px-9 pt-8 pb-6 border-b border-base-300">
-          <p class="font-mono text-[13px] tracking-widest text-primary mb-2">PASSWORD RESET</p>
-          <h1 class="font-serif text-2xl font-light text-base-content leading-tight">Set a new password</h1>
-          <p class="text-sm text-base-content/70 mt-2">
-            Choose a strong password with upper &amp; lower case, a number and a special character.
-          </p>
-        </header>
+      <!-- ── Form panel (right on desktop, below on mobile) ── -->
+      <section
+        class="flex flex-col justify-center px-6 sm:px-12 lg:px-16 pt-16 sm:pt-10 lg:pt-14 pb-6 sm:pb-8 lg:pb-10 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none overflow-y-auto scrollbar-none"
+      >
+        <div class="w-full max-w-lg mx-auto lg:mx-0">
+          <div class="hidden lg:flex items-center mb-8 gap-4">
+            <a
+              routerLink="/"
+              class="inline-flex bb-btn bb-btn-ghost bb-btn-sm shrink-0"
+              aria-label="Back to home"
+            >
+              <i class="material-icons-outlined text-base">arrow_back</i>
+              <span>Back</span>
+            </a>
+          </div>
 
-        <div class="card-body p-6 sm:p-9">
+          <header class="mb-6 sm:mb-8">
+            <p class="font-mono text-[13px] font-semibold tracking-widest text-primary mb-2">
+              PASSWORD RESET
+            </p>
+            <h1 class="font-serif text-2xl sm:text-4xl font-light leading-tight text-base-content">
+              Set a new password
+            </h1>
+            <p class="text-sm text-base-content/80 mt-3">
+              Choose a strong password with upper &amp; lower case, a number and a special character.
+            </p>
+          </header>
+
           @if (successMessage) {
             <div role="status" class="alert alert-success text-sm mb-4">
               <i class="material-icons-outlined" aria-hidden="true">check_circle</i>
@@ -61,15 +123,18 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
             </div>
           }
 
-          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-3 sm:gap-4">
             <label class="form-control w-full">
-              <div class="label">
-                <span class="label-text font-semibold text-xs uppercase tracking-wide">New Password</span>
+              <div class="label pb-1 sm:pb-2">
+                <span
+                  class="label-text text-sm font-semibold text-base-content uppercase tracking-wide"
+                  >New Password</span
+                >
               </div>
               <div class="relative">
                 <input
                   id="rp-new-password"
-                  class="input input-bordered w-full pr-11"
+                  class="bb-input pr-11"
                   [class.input-error]="f['newPassword'].invalid && f['newPassword'].touched"
                   [type]="showNewPassword ? 'text' : 'password'"
                   formControlName="newPassword"
@@ -88,23 +153,30 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
                 </button>
               </div>
               @if (f['newPassword'].hasError('minlength') && f['newPassword'].touched) {
-                <div class="label"><span class="label-text-alt text-error">Minimum 8 characters</span></div>
+                <div class="label py-1">
+                  <span class="label-text-alt text-error text-xs">Minimum 8 characters</span>
+                </div>
               }
               @if (f['newPassword'].hasError('pattern') && f['newPassword'].touched) {
-                <div class="label">
-                  <span class="label-text-alt text-error">Must include upper, lower, number and a special character</span>
+                <div class="label py-1">
+                  <span class="label-text-alt text-error text-xs"
+                    >Must include upper, lower, number and a special character</span
+                  >
                 </div>
               }
             </label>
 
             <label class="form-control w-full">
-              <div class="label">
-                <span class="label-text font-semibold text-xs uppercase tracking-wide">Confirm Password</span>
+              <div class="label pb-1 sm:pb-2">
+                <span
+                  class="label-text text-sm font-semibold text-base-content uppercase tracking-wide"
+                  >Confirm Password</span
+                >
               </div>
               <div class="relative">
                 <input
                   id="rp-confirm-password"
-                  class="input input-bordered w-full pr-11"
+                  class="bb-input pr-11"
                   [class.input-error]="form.hasError('passwordMismatch') && f['confirmPassword'].touched"
                   [type]="showConfirmPassword ? 'text' : 'password'"
                   formControlName="confirmPassword"
@@ -123,11 +195,17 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
                 </button>
               </div>
               @if (form.hasError('passwordMismatch') && f['confirmPassword'].touched) {
-                <div class="label"><span class="label-text-alt text-error">Passwords do not match</span></div>
+                <div class="label py-1">
+                  <span class="label-text-alt text-error text-xs">Passwords do not match</span>
+                </div>
               }
             </label>
 
-            <button class="bb-btn bb-btn-primary w-full h-12" type="submit" [disabled]="loading || !!successMessage">
+            <button
+              class="bb-btn bb-btn-primary w-full h-12 text-base font-semibold"
+              type="submit"
+              [disabled]="loading || !!successMessage"
+            >
               @if (loading) {
                 <span class="loading loading-spinner loading-sm" aria-label="Loading"></span>
               } @else {
@@ -135,12 +213,12 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
                 <i class="material-icons-outlined" aria-hidden="true">arrow_forward</i>
               }
             </button>
+
+            <p class="lg:hidden text-center text-base font-medium text-base-content/80 mt-3">
+              <a routerLink="/auth/login" class="text-primary font-bold hover:underline">Back to sign in</a>
+            </p>
           </form>
         </div>
-
-        <footer class="px-6 sm:px-9 py-5 border-t border-base-300 text-center text-sm text-base-content/70">
-          <a routerLink="/auth/login" class="text-primary font-semibold hover:underline">Back to sign in</a>
-        </footer>
       </section>
     </main>
   `,

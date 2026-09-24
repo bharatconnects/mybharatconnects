@@ -143,8 +143,8 @@ export class EmailService {
             <td style="background-color:#faf6ed;border-top:1px solid #ddd5c5;padding:20px 40px;text-align:center;">
               <p style="margin:0 0 6px;color:#6b7280;font-size:12px;">
                 Need help? Email us at
-                <a href="mailto:support@mybharatconnects.com"
-                   style="color:#d97706;text-decoration:none;">support@mybharatconnects.com</a>
+                <a href="mailto:info@mybharatconnects.com"
+                   style="color:#d97706;text-decoration:none;">info@mybharatconnects.com</a>
               </p>
               <p style="margin:0;color:#9ca3af;font-size:11px;">
                 &copy; ${year} MyBharatConnects. All rights reserved.<br/>
@@ -243,7 +243,7 @@ export class EmailService {
         </p>
         <p style="margin:0;color:#6b7280;font-size:13px;">
           If you did not create this account, please contact us immediately at
-          <a href="mailto:support@mybharatconnects.com" style="color:#d97706;text-decoration:none;">support@mybharatconnects.com</a>.
+          <a href="mailto:info@mybharatconnects.com" style="color:#d97706;text-decoration:none;">info@mybharatconnects.com</a>.
         </p>
       `),
     });
@@ -727,7 +727,7 @@ export class EmailService {
         </table>
         <p style="margin:0;color:#6b7280;font-size:13px;">
           If you have already made this payment, please disregard this message. For any queries,
-          contact us at <a href="mailto:support@mybharatconnects.com" style="color:#d97706;text-decoration:none;">support@mybharatconnects.com</a>.
+          contact us at <a href="mailto:info@mybharatconnects.com" style="color:#d97706;text-decoration:none;">info@mybharatconnects.com</a>.
         </p>
       `),
     });
