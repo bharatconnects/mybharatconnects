@@ -8,7 +8,7 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { CaseEvents, CaseEventPayload } from '../../common/events/case-events';
 import {
   Document,
@@ -223,7 +223,7 @@ export class DocumentsService {
       );
     }
 
-    const s3Key = `cases/${dto.caseId}/${uuidv4()}-${dto.originalFileName}`;
+    const s3Key = `cases/${dto.caseId}/${randomUUID()}-${dto.originalFileName}`;
 
     const uploadUrl = await this.s3Service.getPresignedUploadUrl(
       s3Key,
