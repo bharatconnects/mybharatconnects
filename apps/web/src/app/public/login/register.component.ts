@@ -13,6 +13,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { extractApiError } from '../../core/services/api-error';
 import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-logo.component';
 import { RecaptchaService } from '../../core/services/recaptcha.service';
+import { ToastService } from '../../core/services/toast.service';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password')?.value;
@@ -102,22 +103,6 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
               <span>{{ successMessage }}</span>
             </div>
           }
-          @if (errorMessage) {
-            <div role="alert" class="alert alert-error text-sm mb-5 flex-col items-start">
-              <div class="flex gap-2 items-center">
-                <i class="material-icons-outlined" aria-hidden="true">error_outline</i>
-                <span>{{ errorMessage }}</span>
-              </div>
-              @if (errorList && errorList.length > 1) {
-                <ul class="list-disc ml-8 mt-2 text-xs space-y-1">
-                  @for (e of errorList; track e) {
-                    <li>{{ e }}</li>
-                  }
-                </ul>
-              }
-            </div>
-          }
-
           <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-3 sm:gap-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
               <label class="form-control w-full">
@@ -310,8 +295,6 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 export class RegisterComponent implements OnInit {
   registerForm!: FormGroup;
   loading = false;
-  errorMessage = '';
-  errorList: string[] | undefined;
   successMessage = '';
   showPassword = false;
 
@@ -320,6 +303,7 @@ export class RegisterComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private recaptcha: RecaptchaService,
+    private toast: ToastService,
   ) {}
 
   get f() {
@@ -344,10 +328,9 @@ export class RegisterComponent implements OnInit {
     // accounts get auto-created with role CLIENT in handleGoogleLogin.
     this.authService.startGoogleLogin().subscribe({
       error: (err) => {
-        this.errorMessage = extractApiError(
-          err,
-          'Could not start Google sign-in. Please try again.',
-        ).message;
+        this.toast.error(
+          extractApiError(err, 'Could not start Google sign-in. Please try again.').message,
+        );
       },
     });
   }
@@ -358,8 +341,6 @@ export class RegisterComponent implements OnInit {
       return;
     }
     this.loading = true;
-    this.errorMessage = '';
-    this.errorList = undefined;
     const { name, email, password } = this.registerForm.value;
     const recaptchaToken = await this.recaptcha.execute('register');
     this.authService.register({ name, email, password, recaptchaToken }).subscribe({
@@ -371,8 +352,8 @@ export class RegisterComponent implements OnInit {
       error: (err) => {
         this.loading = false;
         const e = extractApiError(err, 'Registration failed. Please try again.');
-        this.errorMessage = e.message;
-        this.errorList = e.errors;
+        const text = e.errors?.length ? [e.message, ...e.errors].join(' — ') : e.message;
+        this.toast.error(text);
       },
     });
   }
