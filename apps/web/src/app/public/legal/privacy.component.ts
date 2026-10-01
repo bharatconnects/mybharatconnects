@@ -388,6 +388,6 @@ import { FooterComponent } from '../shared/footer.component';
 })
 export class PrivacyComponent {
   constructor(title: Title) {
-    title.setTitle('Privacy Policy — MyBharatConnects');
+    title.setTitle('Privacy Policy | MyBharatConnects');
   }
 }

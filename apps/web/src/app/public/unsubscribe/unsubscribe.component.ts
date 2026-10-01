@@ -21,7 +21,7 @@ import { extractApiError } from '../../core/services/api-error';
           <p class="font-serif text-lg text-base-content m-0">You're unsubscribed</p>
           <p class="text-sm text-base-content/70 m-0">
             You won't receive any more follow-up emails about this case. You'll still get
-            essential account emails — login codes, password resets, and updates on cases
+            essential account emails: login codes, password resets, and updates on cases
             already in progress.
           </p>
         } @else {

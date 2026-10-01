@@ -23,15 +23,15 @@ const FOUNDERS: Founder[] = [
   {
     photo: '/founder-atul-jain.jpg',
     name: 'Atul Jain',
-    role: 'Co-Founder — US Operations & Client Experience',
-    bio: 'Atul brings more than 25 years of professional and leadership experience across the United States, India, and global organizations, with a focus on complex business operations, compliance, and delivering outcomes across large, geographically distributed teams. At My Bharat Connects, he leads US-facing operations and client experience — accountability, transparency, and execution at every step. His role is not simply to connect clients with a service provider; it is to make sure the connection works.',
+    role: 'Co-Founder, US Operations & Client Experience',
+    bio: 'Atul brings more than 25 years of professional and leadership experience across the United States, India, and global organizations, with a focus on complex business operations, compliance, and delivering outcomes across large, geographically distributed teams. At My Bharat Connects, he leads US-facing operations and client experience: accountability, transparency, and execution at every step. His role is not simply to connect clients with a service provider; it is to make sure the connection works.',
     quote: 'When someone trusts you with something important, you own the outcome.',
   },
   {
     photo: '/founder-reshu-jain.jpg',
     name: 'Reshu Jain',
-    role: 'Co-Founder — Real Estate, Community Services & Educator',
-    bio: 'Reshu brings more than 20 years of experience in education, alongside professional experience as a Realtor, Notary Public, and real estate developer in North Carolina — a career built around people, families, property, and the trust that comes with helping others navigate important decisions. Her background gives My Bharat Connects a practical understanding of what NRIs face when managing property, documents, and family matters from abroad.',
+    role: 'Co-Founder, Real Estate, Community Services & Educator',
+    bio: 'Reshu brings more than 20 years of experience in education, alongside professional experience as a Realtor, Notary Public, and real estate developer in North Carolina, a career built around people, families, property, and the trust that comes with helping others navigate important decisions. Her background gives My Bharat Connects a practical understanding of what NRIs face when managing property, documents, and family matters from abroad.',
     quote: 'Behind every request is a person, a family, and something that matters to them.',
   },
 ];
@@ -50,7 +50,7 @@ const OFFERS: Offer[] = [
   {
     icon: 'visibility',
     title: 'Transparent by design',
-    desc: 'Our CRM-driven workflow keeps you informed at every stage — what is happening, who is doing it, what is next — so you’re in the loop with each step.',
+    desc: 'Our CRM-driven workflow keeps you informed at every stage: what is happening, who is doing it, what is next, so you’re in the loop with each step.',
   },
   {
     icon: 'public',
@@ -87,7 +87,7 @@ const OFFERS: Offer[] = [
           <p appReveal [revealDelay]="160" class="text-base sm:text-lg text-[var(--ink)]/75 leading-relaxed">
             Every NRI knows the moment. The parent who needs a document signed and it can't wait.
             The property that has sat quiet for a year and something feels wrong. The tax notice
-            from India that arrives in your inbox on a Tuesday morning in New Jersey — and
+            from India that arrives in your inbox on a Tuesday morning in New Jersey, and
             suddenly you are twelve time zones and one anxious phone call away from a solution.
           </p>
         </div>
@@ -101,7 +101,7 @@ const OFFERS: Offer[] = [
           </p>
           <p appReveal class="text-base text-[var(--ink)]/75 leading-relaxed">
             My Bharat Connects was founded in 2026 by a team of NRIs based in the US who lived
-            those same challenges — managing important matters in India while being thousands of
+            those same challenges: managing important matters in India while being thousands of
             miles away.
           </p>
           <p appReveal class="text-base text-[var(--ink)]/75 leading-relaxed">
@@ -112,8 +112,8 @@ const OFFERS: Offer[] = [
           </p>
           <p appReveal class="text-base text-[var(--ink)]/75 leading-relaxed">
             Behind the platform is a leadership team with over 25 years of combined experience in
-            managing legal compliance and real estate within a global framework — the same kind of
-            complex, cross-border matters our clients bring to us. Having that understanding and
+            managing legal compliance and real estate within a global framework. That's the same
+            kind of complex, cross-border matters our clients bring to us. Having that understanding and
             experience shapes everything we do, from how we vet professionals to how we manage
             each engagement.
           </p>
@@ -194,7 +194,7 @@ const OFFERS: Offer[] = [
       >
         <div class="max-w-2xl mx-auto">
           <p appReveal class="text-lg sm:text-xl text-[var(--ivory)]/90 leading-relaxed mb-8 font-serif font-light">
-            At My Bharat Connects, we stand beside you — in your time zone, in your language — and
+            At My Bharat Connects, we stand beside you, in your time zone, in your language, and
             make sure India feels close again.
           </p>
           <p class="font-mono text-[15px] tracking-[0.22em] text-[var(--saffron)] mb-4 uppercase">
@@ -309,11 +309,11 @@ export class AboutComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.title.setTitle('About Us — MyBharatConnects');
+    this.title.setTitle('About Us | MyBharatConnects');
     this.meta.updateTag({
       name: 'description',
       content:
-        'My Bharat Connects was founded by NRIs, for NRIs — a US-based team managing tax, wealth, real estate, and legal matters in India through verified professionals and dedicated relationship managers.',
+        'My Bharat Connects was founded by NRIs, for NRIs: a US-based team managing tax, wealth, real estate, and legal matters in India through verified professionals and dedicated relationship managers.',
     });
   }
 }

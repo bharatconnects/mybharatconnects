@@ -34,7 +34,7 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     icon: 'account_balance',
     bannerImage: '/service-tax-compliance.jpg',
     blurb:
-      'India and US tax filings, repatriation certificates, notice responses, and cross-border compliance — handled end-to-end by empanelled CAs.',
+      'India and US tax filings, repatriation certificates, notice responses, and cross-border compliance, handled end-to-end by empanelled CAs.',
     services: [
       { name: 'Lower TDS Certificate (Form 13)' },
       { name: '15CA / 15CB Repatriation Filing' },
@@ -58,7 +58,7 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     icon: 'trending_up',
     bannerImage: '/service-wealth-management.jpg',
     blurb:
-      'Investments, insurance, loans, and goal-based planning built for the NRI balance sheet — from mutual fund onboarding to GIFT-City advisory.',
+      'Investments, insurance, loans, and goal-based planning built for the NRI balance sheet: from mutual fund onboarding to GIFT-City advisory.',
     services: [
       { name: 'NRI Mutual Fund Onboarding (Investment Marketplace)' },
       { name: 'NRI Loan Referral Desk' },
@@ -103,7 +103,7 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     icon: 'gavel',
     bannerImage: '/service-legal-documents.jpg',
     blurb:
-      'Succession, property transfer, mutation, banking claims, and repatriation paperwork — court and authority work handled locally on your behalf.',
+      'Succession, property transfer, mutation, banking claims, and repatriation paperwork, with court and authority work handled locally on your behalf.',
     services: [
       {
         name: 'Succession & Legal Heir Certificate',

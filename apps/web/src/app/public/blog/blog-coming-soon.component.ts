@@ -31,7 +31,7 @@ import { FooterComponent } from '../shared/footer.component';
           </h1>
           <p class="text-base leading-relaxed" style="color: var(--ink-80)">
             We're putting together guides on tax, wealth management, real estate, and legal
-            documentation for NRIs. Check back soon — or reach out directly and we'll answer
+            documentation for NRIs. Check back soon, or reach out directly and we'll answer
             your question now.
           </p>
           <a routerLink="/#consultation" class="bb-btn bb-btn-primary bb-btn-lg mt-8 inline-flex">
@@ -52,11 +52,11 @@ export class BlogComingSoonComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.title.setTitle('Blog — Coming Soon | MyBharatConnects');
+    this.title.setTitle('Blog Coming Soon | MyBharatConnects');
     this.meta.updateTag({
       name: 'description',
       content:
-        'The MyBharatConnects blog is coming soon — guides on tax, wealth management, real estate, and legal documentation for NRIs.',
+        'The MyBharatConnects blog is coming soon: guides on tax, wealth management, real estate, and legal documentation for NRIs.',
     });
   }
 }

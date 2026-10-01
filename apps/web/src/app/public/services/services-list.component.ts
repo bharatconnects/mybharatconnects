@@ -66,7 +66,7 @@ const SERVICES: ServiceCard[] = SERVICE_VERTICALS.map((v) => ({
             Our <em class="italic text-[var(--saffron)]">Services</em>
           </h1>
           <p class="text-base sm:text-lg text-[var(--ink)]/70 leading-relaxed max-w-xl mx-auto">
-            Four specialist verticals designed for NRIs — each backed by a dedicated case
+            Four specialist verticals designed for NRIs, each backed by a dedicated case
             manager, transparent pricing, and a secure dashboard to track every step.
           </p>
         </div>
@@ -239,11 +239,11 @@ export class ServicesListComponent {
   readonly services = SERVICES;
 
   constructor(title: Title, meta: Meta) {
-    title.setTitle('Our Services — MyBharatConnects');
+    title.setTitle('Our Services | MyBharatConnects');
     meta.updateTag({
       name: 'description',
       content:
-        'Explore our four NRI service verticals: Tax & Compliance, Wealth Management, Real Estate, and Legal Documents — every service handled end-to-end.',
+        'Explore our four NRI service verticals: Tax & Compliance, Wealth Management, Real Estate, and Legal Documents. Every service handled end-to-end.',
     });
   }
 }

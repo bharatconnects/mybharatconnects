@@ -149,7 +149,7 @@ const VERTICAL_ACCENTS: Record<string, string> = {
               Talk to a {{ v.name }} specialist
             </h2>
             <p class="text-base text-[var(--ivory)]/65 mb-8 leading-relaxed">
-              Book a free 30-minute discovery call — we'll scope your situation and recommend
+              Book a free 30-minute discovery call. We'll scope your situation and recommend
               exactly the services you need, with transparent pricing before you commit.
             </p>
             <a routerLink="/auth/register" class="bb-cta-btn">
@@ -342,13 +342,13 @@ export class ServiceDetailComponent implements OnInit {
       }
       this.vertical = v;
       this.otherVerticals = SERVICE_VERTICALS.filter((o) => o.slug !== v.slug);
-      this.titleSvc.setTitle(`${v.name} — MyBharatConnects`);
+      this.titleSvc.setTitle(`${v.name} | MyBharatConnects`);
       this.meta.updateTag({
         name: 'description',
         content: `${v.name} services for NRIs: ${v.services
           .slice(0, 4)
           .map((s) => s.name)
-          .join(', ')} and more — handled end-to-end by MyBharatConnects.`,
+          .join(', ')} and more, handled end-to-end by MyBharatConnects.`,
       });
     });
   }

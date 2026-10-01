@@ -95,7 +95,7 @@ interface PublicTestimonial {
               NRIs and Their Families
             </h1>
             <p appReveal [revealDelay]="170" class="bb-hero-sub">
-              Tax &amp; compliance, wealth management, real estate, and legal documentation — run
+              Tax &amp; compliance, wealth management, real estate, and legal documentation, run
               end-to-end by a dedicated advisor in your time zone, tracked on one secure
               dashboard.
             </p>
@@ -195,7 +195,7 @@ interface PublicTestimonial {
             <p appReveal [revealDelay]="140" class="bb-body mt-4">
               Managing matters in India from abroad usually means chasing a different CA, lawyer,
               and agent across twelve time zones. We replace that with a single accountable
-              relationship — your advisor coordinates every specialist, and you watch it happen on
+              relationship: your advisor coordinates every specialist, and you watch it happen on
               a dashboard built for people who are not in the room.
             </p>
             <ul class="mt-7 flex flex-col gap-3.5">
@@ -223,7 +223,7 @@ interface PublicTestimonial {
             <p class="bb-eyebrow">What we do</p>
             <h2 class="bb-h2">Everything you need. One platform.</h2>
             <p class="bb-body mt-4">
-              Complete solutions across tax, wealth, property, and legal — handled by your
+              Complete solutions across tax, wealth, property, and legal, handled by your
               dedicated advisor from enquiry through settlement.
             </p>
           </header>
@@ -395,7 +395,7 @@ interface PublicTestimonial {
                 </span>
                 <h3 class="bb-lead-success-title">Request received</h3>
                 <p class="bb-lead-success-body">
-                  Thanks, {{ lead.name || 'there' }} — a member of our team will reach out within
+                  Thanks, {{ lead.name || 'there' }}. A member of our team will reach out within
                   one business day to schedule your consultation.
                 </p>
                 <button type="button" class="bb-lead-success-reset" (click)="resetLeadForm()">
@@ -1834,9 +1834,9 @@ export class LandingComponent implements OnInit {
 
   ngOnInit(): void {
     const pageTitle =
-      'MyBharatConnects — NRI Services Platform | Tax, Wealth, Real Estate & Legal';
+      'MyBharatConnects | NRI Services Platform | Tax, Wealth, Real Estate & Legal';
     const description =
-      'End-to-end services for NRIs across four verticals — tax & compliance, wealth management, real estate, and legal documentation. Trusted by 100+ NRI clients.';
+      'End-to-end services for NRIs across four verticals: tax & compliance, wealth management, real estate, and legal documentation. Trusted by 100+ NRI clients.';
     const ogImage = '/og-image.png';
 
     this.title.setTitle(pageTitle);
@@ -1938,7 +1938,7 @@ export class LandingComponent implements OnInit {
         },
         error: () => {
           this.leadSubmitting = false;
-          this.leadError = 'Something went wrong on our end — please try again in a moment.';
+          this.leadError = 'Something went wrong on our end. Please try again in a moment.';
         },
       });
   }
@@ -1998,12 +1998,12 @@ export class LandingComponent implements OnInit {
     {
       icon: 'support_agent',
       title: 'One dedicated advisor',
-      desc: 'A single point of contact coordinates every vertical you need — no re-explaining your situation.',
+      desc: 'A single point of contact coordinates every vertical you need, no re-explaining your situation.',
     },
     {
       icon: 'payments',
       title: 'Transparent pricing',
-      desc: 'See every quote and milestone before you commit — no surprise invoices.',
+      desc: 'See every quote and milestone before you commit, no surprise invoices.',
     },
     {
       icon: 'lock',
@@ -2022,7 +2022,7 @@ export class LandingComponent implements OnInit {
       num: '01',
       icon: 'edit_note',
       title: 'Submit Enquiry',
-      desc: 'Tell us your requirements — the service, your situation, and any deadline.',
+      desc: 'Tell us your requirements: the service, your situation, and any deadline.',
     },
     {
       num: '02',

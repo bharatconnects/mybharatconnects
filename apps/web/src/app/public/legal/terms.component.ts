@@ -601,6 +601,6 @@ import { FooterComponent } from '../shared/footer.component';
 })
 export class TermsComponent {
   constructor(title: Title) {
-    title.setTitle('Terms & Conditions — MyBharatConnects');
+    title.setTitle('Terms & Conditions | MyBharatConnects');
   }
 }

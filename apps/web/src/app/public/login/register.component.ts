@@ -52,7 +52,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
               <i class="material-icons-outlined text-accent mt-0.5" aria-hidden="true"
                 >handshake</i
               >
-              <span>Empanelled CAs, lawyers, agents — auto-routed by language &amp; city</span>
+              <span>Empanelled CAs, lawyers, agents, auto-routed by language &amp; city</span>
             </li>
             <li class="flex items-start gap-3 opacity-90">
               <i class="material-icons-outlined text-accent mt-0.5" aria-hidden="true">lock</i>
@@ -352,7 +352,7 @@ export class RegisterComponent implements OnInit {
       error: (err) => {
         this.loading = false;
         const e = extractApiError(err, 'Registration failed. Please try again.');
-        const text = e.errors?.length ? [e.message, ...e.errors].join(' — ') : e.message;
+        const text = e.errors?.length ? [e.message, ...e.errors].join('. ') : e.message;
         this.toast.error(text);
       },
     });
