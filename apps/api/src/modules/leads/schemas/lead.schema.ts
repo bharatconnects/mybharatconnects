@@ -56,6 +56,10 @@ export enum ServiceType {
   BANKING_SERVICES = 'Banking Services',
   REPATRIATION_OVERSEAS_ACCOUNT = 'Repatriation to Overseas Account',
 
+  // ── Visitor isn't sure which service they need; an advisor will scope it
+  // on the discovery call. ──
+  GENERAL_CONSULTATION = 'General Consultation / Not Sure Yet',
+
   // ── Catch-all for a need not covered by the catalog above — the specifics
   // live in the lead's `message` field. ──
   OTHER = 'Other',

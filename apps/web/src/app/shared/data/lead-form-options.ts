@@ -4,6 +4,8 @@
  */
 
 export const OTHER_SERVICE_VALUE = 'Other';
+// Must match ServiceType.GENERAL_CONSULTATION in the API's lead schema.
+export const GENERAL_CONSULTATION_VALUE = 'General Consultation / Not Sure Yet';
 
 export interface SelectOption {
   value: string;
@@ -23,19 +25,19 @@ export const COUNTRY_OPTIONS: SelectOption[] = [
 ];
 
 export const TIMEZONE_OPTIONS: SelectOption[] = [
-  { value: 'America/New_York', label: 'ET — New York / Toronto' },
-  { value: 'America/Chicago', label: 'CT — Chicago / Dallas' },
-  { value: 'America/Denver', label: 'MT — Denver / Phoenix' },
-  { value: 'America/Los_Angeles', label: 'PT — Los Angeles / San Francisco' },
-  { value: 'America/Anchorage', label: 'AKT — Anchorage' },
-  { value: 'Pacific/Honolulu', label: 'HST — Honolulu' },
-  { value: 'Europe/London', label: 'GMT — London' },
-  { value: 'Europe/Berlin', label: 'CET — Berlin' },
-  { value: 'Asia/Dubai', label: 'GST — Dubai' },
-  { value: 'Asia/Singapore', label: 'SGT — Singapore' },
-  { value: 'Asia/Hong_Kong', label: 'HKT — Hong Kong' },
-  { value: 'Australia/Sydney', label: 'AET — Sydney' },
-  { value: 'Asia/Kolkata', label: 'IST — India' },
+  { value: 'America/New_York', label: 'ET: New York / Toronto' },
+  { value: 'America/Chicago', label: 'CT: Chicago / Dallas' },
+  { value: 'America/Denver', label: 'MT: Denver / Phoenix' },
+  { value: 'America/Los_Angeles', label: 'PT: Los Angeles / San Francisco' },
+  { value: 'America/Anchorage', label: 'AKT: Anchorage' },
+  { value: 'Pacific/Honolulu', label: 'HST: Honolulu' },
+  { value: 'Europe/London', label: 'GMT: London' },
+  { value: 'Europe/Berlin', label: 'CET: Berlin' },
+  { value: 'Asia/Dubai', label: 'GST: Dubai' },
+  { value: 'Asia/Singapore', label: 'SGT: Singapore' },
+  { value: 'Asia/Hong_Kong', label: 'HKT: Hong Kong' },
+  { value: 'Australia/Sydney', label: 'AET: Sydney' },
+  { value: 'Asia/Kolkata', label: 'IST: India' },
 ];
 
 // Which of the timezones above are plausible for someone based in a given
@@ -69,8 +71,8 @@ export function timezonesForCountry(countryCode: string | null | undefined): Sel
 }
 
 export const INTENT_OPTIONS: SelectOption[] = [
-  { value: 'urgent', label: 'Urgent — need help this week' },
-  { value: 'high-value', label: 'High value — >₹1 Cr deal' },
-  { value: 'cross-sell', label: 'Existing client — new need' },
+  { value: 'urgent', label: 'Urgent: need help this week' },
+  { value: 'high-value', label: 'High value: >₹1 Cr deal' },
+  { value: 'cross-sell', label: 'Existing client: new need' },
   { value: 'general', label: 'Just exploring' },
 ];

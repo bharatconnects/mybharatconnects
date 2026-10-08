@@ -159,7 +159,7 @@ export class PaymentsService {
 
     if (!payment.stripePaymentIntentId) {
       throw new BadRequestException(
-        'Payment is missing stripePaymentIntentId — not a Stripe payment.',
+        'Payment is missing stripePaymentIntentId. Not a Stripe payment.',
       );
     }
     const captured = await stripe.paymentIntents.capture(payment.stripePaymentIntentId, {
@@ -208,7 +208,7 @@ export class PaymentsService {
 
     if (!payment.stripePaymentIntentId) {
       throw new BadRequestException(
-        'Payment is missing stripePaymentIntentId — not a Stripe payment.',
+        'Payment is missing stripePaymentIntentId. Not a Stripe payment.',
       );
     }
     const refund = await stripe.refunds.create({

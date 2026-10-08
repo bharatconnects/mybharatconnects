@@ -15,7 +15,7 @@ import { DateSortOrder, sortByDate } from '../../../../shared/utils/sort-by-date
   template: `
     <p class="text-sm text-base-content/60 mb-5">
       Payments your case manager has requested, and your full payment history. Pay a request
-      online below — once it's received, a receipt appears here for download.
+      online below. Once it's received, a receipt appears here for download.
     </p>
 
     @if (errorMessage) {

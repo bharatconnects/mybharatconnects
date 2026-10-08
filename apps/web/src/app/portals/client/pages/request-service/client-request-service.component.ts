@@ -73,7 +73,7 @@ const STATUS_LABEL: Record<string, string> = {
         >
           <i class="material-icons-outlined text-base">check_circle</i>
           <span class="flex-1"
-            >Request received — a case manager will email you within 24 hours to schedule a free
+            >Request received. A case manager will email you within 24 hours to schedule a free
             30-minute discovery call.</span
           >
           <button type="button" class="bb-btn bb-btn-ghost bb-btn-sm" (click)="startAnother()">

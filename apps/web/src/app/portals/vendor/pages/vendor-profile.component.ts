@@ -59,7 +59,7 @@ const SERVICE_TYPE_OPTIONS = VERTICAL_NAMES;
     } @else if (errorMessage) {
       <div class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-error/10 text-error border border-error/20 text-sm">
         <i class="material-icons-outlined text-base" aria-hidden="true">error_outline</i>
-        <span class="flex-1">Could not load profile — {{ errorMessage }}</span>
+        <span class="flex-1">Could not load profile: {{ errorMessage }}</span>
         <button class="bb-btn bb-btn-ghost bb-btn-sm" (click)="reload()">Retry</button>
       </div>
     } @else if (profile && draft) {

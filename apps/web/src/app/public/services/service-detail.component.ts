@@ -14,7 +14,9 @@ import {
  * verticals, with delivery steps where the engagement follows a fixed
  * sequence. Content is fully driven by the shared service catalog.
  */
-const VERTICAL_ACCENTS: Record<string, string> = {
+// Banner gradient colours for each vertical's page (separate from the card
+// header colours in the service catalog).
+const BANNER_ACCENTS: Record<string, string> = {
   'tax-compliance': '#1f4e79',
   'wealth-management': '#c95f10',
   'real-estate': '#2a6399',
@@ -41,7 +43,7 @@ const VERTICAL_ACCENTS: Record<string, string> = {
                 >Services</a
               >
               <span class="mx-2" aria-hidden="true">/</span>
-              <span class="text-[var(--ink)]/80">{{ v.name }}</span>
+              <span class="text-[var(--ink)]/80">{{ v.title }}</span>
             </nav>
 
             <div
@@ -50,7 +52,7 @@ const VERTICAL_ACCENTS: Record<string, string> = {
                 'background-image: linear-gradient(180deg, rgba(12,33,53,0.15) 0%, rgba(12,33,53,0.45) 100%), url(' +
                 v.bannerImage +
                 '), linear-gradient(135deg, ' +
-                accentFor(v.slug) +
+                bannerAccent(v.slug) +
                 ' 0%, var(--navy-900) 100%)'
               "
             >
@@ -61,7 +63,7 @@ const VERTICAL_ACCENTS: Record<string, string> = {
             <h1
               class="font-serif font-light text-[var(--ink)] text-4xl sm:text-5xl leading-[1.1] mb-5"
             >
-              {{ v.name }}
+              {{ v.title }}
             </h1>
             <p class="text-base sm:text-lg text-[var(--ink)]/70 leading-relaxed max-w-2xl mx-auto">
               {{ v.blurb }}
@@ -126,7 +128,7 @@ const VERTICAL_ACCENTS: Record<string, string> = {
                     <i class="material-icons-outlined text-base" aria-hidden="true">{{
                       o.icon
                     }}</i>
-                    {{ o.name }}
+                    {{ o.title }}
                   </a>
                 }
               </div>
@@ -321,8 +323,8 @@ export class ServiceDetailComponent implements OnInit {
   vertical: ServiceVertical | null = null;
   otherVerticals: ServiceVertical[] = [];
 
-  accentFor(slug: string): string {
-    return VERTICAL_ACCENTS[slug] ?? '#1f4e79';
+  bannerAccent(slug: string): string {
+    return BANNER_ACCENTS[slug] ?? '#1f4e79';
   }
 
   constructor(
@@ -342,7 +344,7 @@ export class ServiceDetailComponent implements OnInit {
       }
       this.vertical = v;
       this.otherVerticals = SERVICE_VERTICALS.filter((o) => o.slug !== v.slug);
-      this.titleSvc.setTitle(`${v.name} | MyBharatConnects`);
+      this.titleSvc.setTitle(`${v.title} | MyBharatConnects`);
       this.meta.updateTag({
         name: 'description',
         content: `${v.name} services for NRIs: ${v.services

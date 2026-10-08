@@ -119,7 +119,7 @@ const STATUS_CHIP: Record<string, string> = {
                         (change)="togglePendingCase(s.id)"
                       />
                       <div class="flex flex-col min-w-0">
-                        <span class="text-sm font-bold text-base-content truncate">{{ s.caseNumber }} — {{ s.clientName }}</span>
+                        <span class="text-sm font-bold text-base-content truncate">{{ s.caseNumber }}: {{ s.clientName }}</span>
                         <span class="text-xs text-base-content/70 truncate">{{ s.title }}</span>
                       </div>
                     </label>

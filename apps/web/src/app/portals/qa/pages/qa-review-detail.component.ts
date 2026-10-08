@@ -71,7 +71,7 @@ interface CaseDocument {
           <div class="bb-card-body">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div class="bb-section-title break-all">
-                Review — {{ getCaseName(review.caseId) }}
+                Review: {{ getCaseName(review.caseId) }}
               </div>
               <span class="bb-chip" [ngClass]="statusChipClass(review.status)">{{
                 review.status
@@ -218,7 +218,7 @@ interface CaseDocument {
                   name="reason"
                   [(ngModel)]="reason"
                   placeholder="What did you check? What changes are needed?"
-                  aria-label="Comments — required when rejecting"
+                  aria-label="Comments (required when rejecting)"
                 ></textarea>
               </div>
 

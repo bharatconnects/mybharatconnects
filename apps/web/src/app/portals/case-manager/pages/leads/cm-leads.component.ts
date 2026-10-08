@@ -960,14 +960,14 @@ export class CmLeadsComponent implements OnInit {
       },
       error: () => {
         this.deletingLeadId = '';
-        this.toast.error('Failed to delete lead — it may already have a case');
+        this.toast.error('Failed to delete lead. It may already have a case');
       },
     });
   }
 
   async hideLead(lead: Lead): Promise<void> {
     const ok = await this.confirmDialog.confirm(
-      `Hide lead "${lead.name}"? It will drop off your list — an admin can still see and delete it.`,
+      `Hide lead "${lead.name}"? It will drop off your list, but an admin can still see and delete it.`,
       { title: 'Hide lead', confirmText: 'Hide' },
     );
     if (!ok) return;

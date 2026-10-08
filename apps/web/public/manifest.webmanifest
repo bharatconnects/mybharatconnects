@@ -1,7 +1,7 @@
 {
   "name": "MyBharatConnects",
   "short_name": "MBC",
-  "description": "Your India, Everywhere — NRI real estate services platform.",
+  "description": "Your India, Everywhere. NRI real estate services platform.",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",

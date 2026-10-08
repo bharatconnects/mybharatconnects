@@ -23,7 +23,7 @@ import { BbSelectComponent } from '../../../../shared/components/bb-select/bb-se
         >
           <i class="material-icons-outlined text-base">check_circle</i>
           <span
-            >Your complaint has been submitted — an Operations Lead will reach out within 1
+            >Your complaint has been submitted. An Operations Lead will reach out within 1
             business day.</span
           >
         </div>
@@ -137,7 +137,7 @@ export class ClientHelpSupportComponent implements OnInit {
   ];
 
   caseSelectOptions(): { value: string; label: string }[] {
-    return this.cases.map((c) => ({ value: c._id, label: `${c.caseNumber} — ${c.title}` }));
+    return this.cases.map((c) => ({ value: c._id, label: `${c.caseNumber}: ${c.title}` }));
   }
 
   constructor(

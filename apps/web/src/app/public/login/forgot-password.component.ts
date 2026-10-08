@@ -22,25 +22,33 @@ import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-log
 
         <div class="hidden lg:block max-w-md">
           <p class="font-mono text-[13px] tracking-widest text-accent mb-4">
-            TRUSTED NRI REAL ESTATE PLATFORM
+            THE TRUSTED NRI CROSS-BORDER PLATFORM
           </p>
-          <h2 class="font-serif text-4xl xl:text-5xl font-light leading-[1.1] mb-6">
-            Your Property.<br />
+          <h2 class="font-serif text-[1.875rem] xl:text-[2rem] font-light leading-[1.15] mb-6">
+            <span class="whitespace-nowrap">Your Assets &amp; Affairs in India.</span><br />
             <em class="italic text-accent">Our Expertise.</em><br />
             Your Peace of Mind.
           </h2>
           <ul class="space-y-3 text-sm">
             <li class="flex items-center gap-3 opacity-90">
               <i class="material-icons-outlined text-accent" aria-hidden="true">check_circle</i>
-              <span>500+ NRI clients across 10+ Indian cities</span>
+              <span>Property &amp; Asset Care</span>
             </li>
             <li class="flex items-center gap-3 opacity-90">
               <i class="material-icons-outlined text-accent" aria-hidden="true">check_circle</i>
-              <span>&#8377;500Cr+ in property managed end-to-end</span>
+              <span>Legal &amp; Documentation</span>
             </li>
             <li class="flex items-center gap-3 opacity-90">
               <i class="material-icons-outlined text-accent" aria-hidden="true">check_circle</i>
-              <span>Dedicated advisor from day one</span>
+              <span>Tax &amp; Finance</span>
+            </li>
+            <li class="flex items-center gap-3 opacity-90">
+              <i class="material-icons-outlined text-accent" aria-hidden="true">check_circle</i>
+              <span>Ground Concierge</span>
+            </li>
+            <li class="flex items-center gap-3 opacity-90">
+              <i class="material-icons-outlined text-accent" aria-hidden="true">check_circle</i>
+              <span>Dedicated Advisory</span>
             </li>
           </ul>
         </div>

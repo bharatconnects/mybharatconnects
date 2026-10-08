@@ -246,7 +246,7 @@
      * user-agent default of 0s/1 rather than the component's real value —
      * so the actual durations are restated explicitly instead. */
     .bb-ticker-track {
-      animation-duration: 34s !important;
+      animation-duration: 75s !important;
       animation-iteration-count: infinite !important;
     }
     .bb-flow-track {
@@ -1412,3 +1412,64 @@
     border-top: 3px solid #dc2626;
   }
 } /* end @layer components */
+
+/* ============================================================
+ *  9.  Practice-area card header (landing + /services cards)
+ *  One shared header so every practice-area card reads the same:
+ *  a coloured band that bleeds to the card edges (the card sets
+ *  --card-accent, --card-pad-x and --card-pad-y), with a white
+ *  icon chip and a large, heavy white title.
+ * ============================================================ */
+.bb-card-head {
+  position: relative;
+  margin: calc(-1 * var(--card-pad-y, 36px)) calc(-1 * var(--card-pad-x, 32px)) 24px;
+  padding: 28px var(--card-pad-x, 32px) 22px;
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    var(--card-accent, #1f4e79) 0%,
+    color-mix(in srgb, var(--card-accent, #1f4e79) 70%, #0c2135) 100%
+  );
+}
+.bb-card-head-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  transition: transform 0.25s ease;
+}
+.bb-card-head-icon i {
+  font-size: 27px;
+}
+.bb-card-head-title {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  /* Scales with the viewport so the longest title still fits the narrowest
+   * 4-column layout on two lines at most, keeping every header equal height. */
+  font-size: clamp(1.125rem, 1.45vw, 1.375rem);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: #ffffff;
+  /* Reserve two lines so single- and two-line titles give equal-height headers. */
+  min-height: 2.5em;
+  display: flex;
+  align-items: flex-start;
+}
+.bb-card-head-num {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+  opacity: 0.4;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}

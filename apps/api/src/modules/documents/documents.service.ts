@@ -219,7 +219,7 @@ export class DocumentsService {
       .exec();
     if (duplicate) {
       throw new ConflictException(
-        `A document named "${dto.name}" already exists on this case — rename the file and try again.`,
+        `A document named "${dto.name}" already exists on this case. Rename the file and try again.`,
       );
     }
 

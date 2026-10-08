@@ -88,7 +88,7 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 10px 22px;
+        padding: 8px 20px;
         background: var(--ink);
         color: var(--ivory);
         font-family: 'Plus Jakarta Sans', sans-serif;
@@ -102,6 +102,13 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
           border-color 0.15s ease,
           color 0.15s ease,
           transform 0.06s ease;
+      }
+      /* Keep an icon from stretching the pill taller than its siblings. */
+      .bb-nav-cta i {
+        width: 20px;
+        height: 20px;
+        font-size: 20px;
+        line-height: 1;
       }
       .bb-nav-cta:hover {
         background: var(--saffron);
@@ -265,7 +272,7 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
         cursor: pointer;
         transition: background-color 0.15s ease;
       }
-      @media (max-width: 639.98px) {
+      @media (max-width: 1023.98px) {
         .bb-nav-hamburger {
           display: inline-flex;
         }
@@ -278,16 +285,50 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
         outline: none;
       }
 
-      /* Desktop-only nav items (Blog / About Us) — same reason as
-       * .bb-nav-hamburger above: .bb-nav-link's own display: inline-flex
-       * would otherwise beat Tailwind's "hidden sm:inline". */
+      /* Desktop-only nav items (About Us / Blog / FAQ / Careers) — same reason
+       * as .bb-nav-hamburger above: .bb-nav-link's own display: inline-flex
+       * would otherwise beat Tailwind's "hidden lg:inline". The seven header
+       * items only fit side by side from 1024px up; below that they live in
+       * the hamburger menu. */
       .bb-nav-desktop-link {
         display: none;
       }
-      @media (min-width: 640px) {
+      @media (min-width: 1024px) {
         .bb-nav-desktop-link {
           display: inline-flex;
         }
+      }
+
+      /* Primary "Book Discovery Call" pill: saffron so it outranks the
+       * Sign In pill beside it. Desktop header only; on smaller screens it
+       * is the highlighted row in the hamburger menu instead. */
+      .bb-nav-cta-primary {
+        display: none;
+        background: var(--saffron);
+        border-color: var(--saffron);
+        color: var(--ink);
+        white-space: nowrap;
+      }
+      @media (min-width: 1024px) {
+        .bb-nav-cta-primary {
+          display: inline-flex;
+        }
+      }
+      .bb-nav-cta-primary:hover,
+      .bb-navbar--on-dark .bb-nav-cta-primary:hover {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--ivory);
+      }
+      .bb-navbar--on-dark .bb-nav-cta-primary {
+        background: var(--saffron);
+        border-color: var(--saffron);
+        color: var(--ink);
+      }
+      .bb-navbar--on-dark .bb-nav-cta-primary:hover {
+        background: #ffffff;
+        border-color: #ffffff;
+        color: var(--navy-900);
       }
 
       /* Mobile menu drawer — same display-override reasoning as
@@ -307,7 +348,7 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
         box-shadow: 0 16px 32px rgba(12, 33, 53, 0.14);
         animation: bb-mobile-menu-in 0.16s ease;
       }
-      @media (max-width: 639.98px) {
+      @media (max-width: 1023.98px) {
         .bb-mobile-menu {
           display: flex;
         }
@@ -343,11 +384,28 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
         color: var(--ink-60, rgba(22, 40, 60, 0.6));
         flex-shrink: 0;
       }
+      .bb-mobile-menu-cta {
+        margin-top: 6px;
+        justify-content: center;
+        background: var(--saffron);
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .bb-mobile-menu-cta:hover,
+      .bb-mobile-menu-cta:focus-visible {
+        background: var(--ink);
+        color: var(--ivory);
+      }
+      .bb-mobile-menu-cta i,
+      .bb-mobile-menu-cta:hover i,
+      .bb-mobile-menu-cta:focus-visible i {
+        color: inherit;
+      }
     `,
   ],
   template: `
     <header
-      class="bb-navbar sticky top-0 z-50 py-3.5 relative"
+      class="bb-navbar sticky top-0 z-50 py-2 relative"
       [class.bb-navbar--solid]="!immersive || scrolled"
       [class.bb-navbar--on-dark]="immersive && !scrolled"
     >
@@ -371,13 +429,27 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
           class="inline-flex items-center"
           (click)="closeMobileMenu()"
         >
-          <app-brand-logo variant="lockup" [size]="36" class="hidden sm:inline-flex"></app-brand-logo>
-          <app-brand-logo variant="lockup" [size]="28" class="sm:hidden"></app-brand-logo>
+          <app-brand-logo
+            variant="lockup"
+            [size]="36"
+            [onDark]="immersive && !scrolled"
+            class="hidden sm:inline-flex"
+          ></app-brand-logo>
+          <app-brand-logo
+            variant="lockup"
+            [size]="28"
+            [onDark]="immersive && !scrolled"
+            class="sm:hidden"
+          ></app-brand-logo>
         </a>
       </div>
-      <nav class="flex items-center gap-6 sm:gap-9 text-base font-semibold" aria-label="Primary">
+      <nav class="flex items-center gap-4 lg:gap-6 xl:gap-9 text-base font-semibold" aria-label="Primary">
+        <a routerLink="/blog" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">Blog</a>
+        <a routerLink="/faq" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">FAQ</a>
+        <a routerLink="/careers" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">Careers</a>
+        <a routerLink="/about" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">About Us</a>
         <div
-          class="hidden sm:block bb-nav-services"
+          class="hidden lg:block bb-nav-services"
           (mouseenter)="onServicesMouseEnter()"
           (mouseleave)="onServicesMouseLeave()"
         >
@@ -408,7 +480,7 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
                       <i class="material-icons-outlined" aria-hidden="true">{{ v.icon }}</i>
                     </span>
                     <span>
-                      <p class="bb-nav-menu-item-name">{{ v.name }}</p>
+                      <p class="bb-nav-menu-item-name">{{ v.title }}</p>
                       <p class="bb-nav-menu-item-blurb">{{ v.blurb }}</p>
                     </span>
                   </a>
@@ -424,26 +496,19 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
             </div>
           }
         </div>
-        <a routerLink="/blog" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">Blog</a>
-        <a routerLink="/about" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">About Us</a>
         <a routerLink="/auth/login" class="bb-nav-cta">
           Sign In
           <i class="material-icons-outlined text-lg" aria-hidden="true">arrow_forward</i>
+        </a>
+        <a routerLink="/" fragment="consultation" class="bb-nav-cta bb-nav-cta-primary">
+          <i class="material-icons-outlined text-lg" aria-hidden="true">event_available</i>
+          Book Discovery Call
         </a>
       </nav>
       </div>
 
       @if (mobileMenuOpen) {
         <div id="bb-mobile-menu" class="bb-mobile-menu" role="menu">
-          <a
-            routerLink="/services"
-            class="bb-mobile-menu-link"
-            role="menuitem"
-            (click)="closeMobileMenu()"
-          >
-            <i class="material-icons-outlined" aria-hidden="true">apps</i>
-            Services
-          </a>
           <a
             routerLink="/blog"
             class="bb-mobile-menu-link"
@@ -454,6 +519,24 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
             Blog
           </a>
           <a
+            routerLink="/faq"
+            class="bb-mobile-menu-link"
+            role="menuitem"
+            (click)="closeMobileMenu()"
+          >
+            <i class="material-icons-outlined" aria-hidden="true">help_outline</i>
+            FAQ
+          </a>
+          <a
+            routerLink="/careers"
+            class="bb-mobile-menu-link"
+            role="menuitem"
+            (click)="closeMobileMenu()"
+          >
+            <i class="material-icons-outlined" aria-hidden="true">work_outline</i>
+            Careers
+          </a>
+          <a
             routerLink="/about"
             class="bb-mobile-menu-link"
             role="menuitem"
@@ -461,6 +544,25 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
           >
             <i class="material-icons-outlined" aria-hidden="true">info</i>
             About Us
+          </a>
+          <a
+            routerLink="/services"
+            class="bb-mobile-menu-link"
+            role="menuitem"
+            (click)="closeMobileMenu()"
+          >
+            <i class="material-icons-outlined" aria-hidden="true">apps</i>
+            Services
+          </a>
+          <a
+            routerLink="/"
+            fragment="consultation"
+            class="bb-mobile-menu-link bb-mobile-menu-cta"
+            role="menuitem"
+            (click)="closeMobileMenu()"
+          >
+            <i class="material-icons-outlined" aria-hidden="true">event_available</i>
+            Book Discovery Call
           </a>
         </div>
       }

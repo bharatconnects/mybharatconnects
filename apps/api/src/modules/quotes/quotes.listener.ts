@@ -202,7 +202,7 @@ export class QuotesListener {
     await this.notifyMilestoneStatus(
       payload,
       'caseManagerId',
-      'Vendor has marked this milestone as complete — please ask the client to review and validate it.',
+      'Vendor has marked this milestone as complete. Please ask the client to review and validate it.',
     );
   }
 
@@ -211,7 +211,7 @@ export class QuotesListener {
     await this.notifyMilestoneStatus(
       payload,
       'caseManagerId',
-      'Client has approved this milestone — you can proceed with payment.',
+      'Client has approved this milestone. You can proceed with payment.',
     );
   }
 

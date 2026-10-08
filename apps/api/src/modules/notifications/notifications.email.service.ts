@@ -148,7 +148,7 @@ export class EmailService {
               </p>
               <p style="margin:0;color:#9ca3af;font-size:11px;">
                 &copy; ${year} MyBharatConnects. All rights reserved.<br/>
-                This is an automated message — please do not reply to this email.
+                This is an automated message. Please do not reply to this email.
               </p>
             </td>
           </tr>
@@ -204,7 +204,7 @@ export class EmailService {
         </table>
         <p style="margin:0;color:#6b7280;font-size:13px;">
           If you did not request this OTP, please ignore this email or contact support immediately.
-          Never share your OTP with anyone — our team will never ask for it.
+          Never share your OTP with anyone. Our team will never ask for it.
         </p>
       `),
     });
@@ -765,7 +765,7 @@ export class EmailService {
   ): Promise<void> {
     await this.send({
       to,
-      subject: 'We received your query — MyBharatConnects',
+      subject: 'We received your query | MyBharatConnects',
       html: this.wrap(`
         ${this.greeting(name)}
         <p style="margin:0 0 20px;color:#374151;">
@@ -787,7 +787,7 @@ export class EmailService {
   ): Promise<void> {
     await this.send({
       to,
-      subject: `Meet your MyBharatConnects Case Manager — ${caseManagerName}`,
+      subject: `Meet your MyBharatConnects Case Manager: ${caseManagerName}`,
       html: this.wrap(`
         ${this.greeting(name)}
         <p style="margin:0 0 20px;color:#374151;">
@@ -806,7 +806,7 @@ export class EmailService {
   ): Promise<void> {
     await this.send({
       to,
-      subject: `New lead assigned to you — ${leadName}`,
+      subject: `New lead assigned to you: ${leadName}`,
       html: this.wrap(`
         ${this.greeting(cmName)}
         <p style="margin:0 0 20px;color:#374151;">

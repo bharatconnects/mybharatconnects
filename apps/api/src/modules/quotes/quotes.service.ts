@@ -717,7 +717,7 @@ export class QuotesService {
       milestoneId,
       amountInPaise: Math.round((milestone.computedAmount ?? milestone.amountValue) * 100),
       purpose: 'MILESTONE',
-      description: `Milestone payment — ${milestone.title}`,
+      description: `Milestone payment: ${milestone.title}`,
       actorUserId,
       receiptDocumentId: dto.receiptDocumentId,
     });

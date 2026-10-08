@@ -214,7 +214,7 @@ interface CaseOption {
         </div>
       } @else {
         <p class="bb-hint mt-3">
-          Pick a case first — vendors will be assigned to it when you click "Assign to case".
+          Pick a case first. Vendors will be assigned to it when you click "Assign to case".
         </p>
       }
     </div>
@@ -250,7 +250,7 @@ interface CaseOption {
                   <div class="min-w-0">
                     <div class="font-semibold truncate">{{ v.businessName }}</div>
                     <div class="text-xs text-base-content/60 truncate">
-                      {{ displayServices(v) }} — {{ displayCities(v) }}
+                      {{ displayServices(v) }} | {{ displayCities(v) }}
                     </div>
                   </div>
                 </div>
@@ -349,7 +349,7 @@ export class CmVendorsComponent implements OnInit {
   caseSelectOptions(): { value: string; label: string }[] {
     return this.cases.map((c) => ({
       value: c._id,
-      label: `${c.caseNumber} — ${c.title}${c.clientName ? ' (' + c.clientName + ')' : ''}`,
+      label: `${c.caseNumber}: ${c.title}${c.clientName ? ' (' + c.clientName + ')' : ''}`,
     }));
   }
 
@@ -381,7 +381,7 @@ export class CmVendorsComponent implements OnInit {
       },
       error: () => {
         this.casesLoading = false;
-        this.toast.error('Failed to load cases — assigning will be disabled');
+        this.toast.error('Failed to load cases. Assigning will be disabled');
       },
     });
   }

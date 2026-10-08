@@ -95,8 +95,8 @@ interface Quote {
 
 const MILESTONE_STATUS_LABEL: Record<MilestoneStatus, string> = {
   PENDING: 'Pending',
-  VENDOR_MARKED_DONE: 'Marked complete — needs your confirmation',
-  CLIENT_APPROVED: 'Confirmed — payment pending',
+  VENDOR_MARKED_DONE: 'Marked complete, needs your confirmation',
+  CLIENT_APPROVED: 'Confirmed, payment pending',
   PAID: 'Paid',
 };
 
@@ -786,7 +786,7 @@ const PRIORITY_BADGE: Record<string, string> = {
               <div>
                 <h3 class="bb-section-title !mb-1">Rate your consultant</h3>
                 <p class="text-sm text-base-content/60">
-                  This case is closed — let us know how
+                  This case is closed. Let us know how
                   {{ caseData.caseManagerId?.name || 'your case manager' }} did.
                 </p>
               </div>
@@ -1228,7 +1228,7 @@ export class ClientCaseDetailComponent implements OnInit, OnDestroy {
       next: (updated) => {
         this.caseData = updated as Omit<Case, 'status'> & { status: CaseStatus };
         this.confirmingClose = false;
-        this.toast.success('Case marked as complete — thank you!');
+        this.toast.success('Case marked as complete. Thank you!');
       },
       error: (err) => {
         this.confirmingClose = false;
@@ -1558,7 +1558,7 @@ export class ClientCaseDetailComponent implements OnInit, OnDestroy {
     const file = this.uploadFile;
     if (this.documents.some((d) => d.name === file.name)) {
       this.toast.error(
-        `A document named "${file.name}" already exists on this case — rename the file and try again.`,
+        `A document named "${file.name}" already exists on this case. Rename the file and try again.`,
       );
       return;
     }

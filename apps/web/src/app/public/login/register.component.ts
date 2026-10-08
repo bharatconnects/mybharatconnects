@@ -37,26 +37,40 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 
         <div class="hidden lg:block max-w-md">
           <p class="font-mono text-[13px] tracking-widest text-accent mb-3">CREATE YOUR ACCOUNT</p>
-          <h2 class="font-serif text-4xl xl:text-5xl font-light leading-[1.1] mb-6">
-            Get started in<br />
-            <em class="italic text-accent">60 seconds.</em>
+          <h2 class="font-serif text-4xl xl:text-5xl font-light leading-[1.1] mb-5 text-balance">
+            Set up your secure portal in
+            <em class="italic text-accent whitespace-nowrap">60 seconds.</em>
           </h2>
+          <span
+            class="mb-6 inline-flex whitespace-nowrap rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-[10px] font-semibold leading-tight text-neutral-content"
+          >
+            100% complimentary consultation • No credit card required
+          </span>
           <ul class="space-y-3 text-sm mb-8">
             <li class="flex items-start gap-3 opacity-90">
               <i class="material-icons-outlined text-accent mt-0.5" aria-hidden="true"
                 >verified_user</i
               >
-              <span>Free 30-min discovery call with your dedicated advisor</span>
+              <span
+                ><strong class="font-semibold">Complimentary Strategy Call:</strong> 30-min
+                discovery session with your US-based relationship manager.</span
+              >
             </li>
             <li class="flex items-start gap-3 opacity-90">
               <i class="material-icons-outlined text-accent mt-0.5" aria-hidden="true"
                 >handshake</i
               >
-              <span>Empanelled CAs, lawyers, agents, auto-routed by language &amp; city</span>
+              <span
+                ><strong class="font-semibold">Vetted Specialist Network:</strong> Empanelled CAs and
+                Bar Advocates matched to your city and jurisdiction.</span
+              >
             </li>
             <li class="flex items-start gap-3 opacity-90">
               <i class="material-icons-outlined text-accent mt-0.5" aria-hidden="true">lock</i>
-              <span>Bank-grade document vault, escrow payments, transparent pricing</span>
+              <span
+                ><strong class="font-semibold">Vault Protection:</strong> 256-bit encrypted document
+                vault and transparent upfront quotes.</span
+              >
             </li>
           </ul>
         </div>

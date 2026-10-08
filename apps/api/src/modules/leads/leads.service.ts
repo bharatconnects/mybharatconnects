@@ -85,7 +85,7 @@ export class LeadsService {
     }
     if (await this.hasLiveCase(lead)) {
       throw new BadRequestException(
-        'This request has already turned into a case — cancel from the case instead',
+        'This request has already turned into a case. Cancel from the case instead',
       );
     }
     if (lead.status === LeadStatus.CANCELLED) {
@@ -109,7 +109,7 @@ export class LeadsService {
     }
     if (await this.hasLiveCase(lead)) {
       throw new BadRequestException(
-        'This request has already turned into a case — edit it from the case instead',
+        'This request has already turned into a case. Edit it from the case instead',
       );
     }
     if (lead.status === LeadStatus.CANCELLED) {
@@ -377,7 +377,7 @@ export class LeadsService {
     }
     if (!lead.serviceType) {
       throw new BadRequestException(
-        'Lead has no serviceType set — cannot create a case',
+        'Lead has no serviceType set. Cannot create a case',
       );
     }
 

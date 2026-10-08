@@ -429,7 +429,7 @@ interface CaseVendorInvoiceOption {
             </div>
           } @else {
             <p class="text-sm whitespace-pre-line mt-2">
-              {{ caseDetail.description || 'No description provided — add one before opening the case.' }}
+              {{ caseDetail.description || 'No description provided. Add one before opening the case.' }}
             </p>
           }
         </div>
@@ -557,7 +557,7 @@ interface CaseVendorInvoiceOption {
                 <div class="min-w-0">
                   <strong class="block truncate">{{ caseDetail.assignedVendor.name }}</strong>
                   <p class="text-sm text-base-content/60 truncate">
-                    {{ caseDetail.assignedVendor.serviceType }} — {{ caseDetail.assignedVendor.city }}
+                    {{ caseDetail.assignedVendor.serviceType }} | {{ caseDetail.assignedVendor.city }}
                   </p>
                 </div>
               </div>
@@ -1175,7 +1175,7 @@ interface CaseVendorInvoiceOption {
                               <p class="text-base-content/80 m-0 mt-0.5">"{{ q.clientRejectionReason }}"</p>
                             }
                             <p class="text-xs text-base-content/60 m-0 mt-1">
-                              This hasn't been sent to the vendor — negotiate a new price with them below, or
+                              This hasn't been sent to the vendor. Negotiate a new price with them below, or
                               reject the quote outright.
                             </p>
                           </div>
@@ -1678,7 +1678,7 @@ interface CaseVendorInvoiceOption {
                   class="flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-sm bg-info/10 border border-info/20"
                 >
                   <i class="material-icons-outlined text-base text-info">receipt_long</i>
-                  Pre-filled from this payment's Stripe receipt — items below were auto-filled,
+                  Pre-filled from this payment's Stripe receipt. Items below were auto-filled,
                   billing address still needs to be entered.
                 </div>
               }
@@ -1719,7 +1719,7 @@ interface CaseVendorInvoiceOption {
                     }
                   </div>
                   <p class="bb-hint mt-1">
-                    Selecting one or more pre-fills the items below — still fully editable before
+                    Selecting one or more pre-fills the items below, still fully editable before
                     you save.
                   </p>
                 }
@@ -2840,7 +2840,7 @@ export class CmCaseDetailComponent implements OnInit {
       next: (updated) => {
         this.issuingInvoiceId = null;
         this.caseInvoices = this.caseInvoices.map((i) => (i._id === inv._id ? updated : i));
-        this.toast.success('Invoice issued — the client can now see it');
+        this.toast.success('Invoice issued. The client can now see it');
       },
       error: (err) => {
         this.issuingInvoiceId = null;
@@ -2895,7 +2895,7 @@ export class CmCaseDetailComponent implements OnInit {
       .requestUploadUrl({
         caseId: this.caseDetail._id,
         category: 'FINANCIAL',
-        name: `Invoice attachment — ${file.name}`,
+        name: `Invoice attachment: ${file.name}`,
         originalFileName: file.name,
         mimeType: file.type || 'application/octet-stream',
         sizeBytes: file.size,
@@ -3148,7 +3148,7 @@ export class CmCaseDetailComponent implements OnInit {
       .requestUploadUrl({
         caseId: this.caseDetail._id,
         category: 'FINANCIAL',
-        name: `Payment receipt — ${file.name}`,
+        name: `Payment receipt: ${file.name}`,
         originalFileName: file.name,
         mimeType: file.type || 'application/octet-stream',
         sizeBytes: file.size,
@@ -3292,7 +3292,7 @@ export class CmCaseDetailComponent implements OnInit {
     const file = this.uploadFile;
     if (this.documents.some((d) => d.name === file.name)) {
       this.toast.error(
-        `A document named "${file.name}" already exists on this case — rename the file and try again.`,
+        `A document named "${file.name}" already exists on this case. Rename the file and try again.`,
       );
       return;
     }
@@ -3653,7 +3653,7 @@ export class CmCaseDetailComponent implements OnInit {
       case 'VENDOR_MARKED_DONE':
         return 'Vendor marked done';
       case 'CLIENT_APPROVED':
-        return 'Client approved — ready for payment';
+        return 'Client approved, ready for payment';
       case 'PAID':
         return 'Paid';
       default:
@@ -3973,7 +3973,7 @@ export class CmCaseDetailComponent implements OnInit {
       next: (updated) => {
         this.deletingQuoteId = null;
         this.quotes = this.quotes.map((qq) => (qq._id === q._id ? updated : qq));
-        this.toast.success('Quote deleted — vendor re-invited to submit a new one');
+        this.toast.success('Quote deleted. Vendor re-invited to submit a new one');
       },
       error: (err) => {
         this.deletingQuoteId = null;

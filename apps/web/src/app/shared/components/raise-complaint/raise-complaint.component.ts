@@ -30,7 +30,7 @@ interface MyComplaint {
           class="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm bg-success/10 text-success border border-success/20"
         >
           <i class="material-icons-outlined text-base">check_circle</i>
-          <span>Your complaint has been submitted — an admin will review it shortly.</span>
+          <span>Your complaint has been submitted. An admin will review it shortly.</span>
         </div>
       }
 
@@ -39,7 +39,7 @@ interface MyComplaint {
           <div class="bb-card-body flex flex-col gap-5">
             <div>
               <h3 class="bb-section-title !mb-0">Raise a Complaint</h3>
-              <p class="bb-section-subtitle">Let the admin team know about any issue — big or small.</p>
+              <p class="bb-section-subtitle">Let the admin team know about any issue, big or small.</p>
             </div>
 
             <div>

@@ -59,19 +59,19 @@ const MONTH_NAMES = [
 ];
 
 const COMMON_TIMEZONES = [
-  { value: 'Asia/Kolkata', label: 'Asia/Kolkata — India Standard Time (IST)' },
-  { value: 'America/New_York', label: 'America/New_York — Eastern Time (ET)' },
-  { value: 'America/Los_Angeles', label: 'America/Los_Angeles — Pacific Time (PT)' },
-  { value: 'America/Chicago', label: 'America/Chicago — Central Time (CT)' },
-  { value: 'America/Denver', label: 'America/Denver — Mountain Time (MT)' },
-  { value: 'America/Anchorage', label: 'America/Anchorage — Alaska Time (AKT)' },
-  { value: 'Pacific/Honolulu', label: 'Pacific/Honolulu — Hawaii-Aleutian Time (HST)' },
-  { value: 'Europe/London', label: 'Europe/London — Greenwich / British Time' },
-  { value: 'Europe/Berlin', label: 'Europe/Berlin — Central European Time' },
-  { value: 'Asia/Dubai', label: 'Asia/Dubai — Gulf Standard Time (GST)' },
-  { value: 'Asia/Singapore', label: 'Asia/Singapore — Singapore Time (SGT)' },
-  { value: 'Asia/Hong_Kong', label: 'Asia/Hong_Kong — Hong Kong Time' },
-  { value: 'Australia/Sydney', label: 'Australia/Sydney — Australian Eastern Time' },
+  { value: 'Asia/Kolkata', label: 'Asia/Kolkata: India Standard Time (IST)' },
+  { value: 'America/New_York', label: 'America/New_York: Eastern Time (ET)' },
+  { value: 'America/Los_Angeles', label: 'America/Los_Angeles: Pacific Time (PT)' },
+  { value: 'America/Chicago', label: 'America/Chicago: Central Time (CT)' },
+  { value: 'America/Denver', label: 'America/Denver: Mountain Time (MT)' },
+  { value: 'America/Anchorage', label: 'America/Anchorage: Alaska Time (AKT)' },
+  { value: 'Pacific/Honolulu', label: 'Pacific/Honolulu: Hawaii-Aleutian Time (HST)' },
+  { value: 'Europe/London', label: 'Europe/London: Greenwich / British Time' },
+  { value: 'Europe/Berlin', label: 'Europe/Berlin: Central European Time' },
+  { value: 'Asia/Dubai', label: 'Asia/Dubai: Gulf Standard Time (GST)' },
+  { value: 'Asia/Singapore', label: 'Asia/Singapore: Singapore Time (SGT)' },
+  { value: 'Asia/Hong_Kong', label: 'Asia/Hong_Kong: Hong Kong Time' },
+  { value: 'Australia/Sydney', label: 'Australia/Sydney: Australian Eastern Time' },
 ];
 
 const SLOT_OPTIONS = [15, 30, 45, 60, 90];

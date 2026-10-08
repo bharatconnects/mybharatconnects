@@ -312,7 +312,7 @@ interface InvoiceTarget {
         <div class="bb-empty">
           <div class="bb-empty-icon"><i class="material-icons-outlined">receipt_long</i></div>
           <p class="bb-empty-title">No invoices yet</p>
-          <p>Invoices you create — here or from a case — show up here.</p>
+          <p>Invoices you create, here or from a case, show up here.</p>
         </div>
       } @else {
         <div class="bb-table-wrap">

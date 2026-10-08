@@ -35,7 +35,7 @@ import { SERVICE_VERTICALS } from '../../shared/data/service-catalog';
             <a
               [routerLink]="['/services', v.slug]"
               class="text-sm opacity-55 hover:opacity-100 transition py-1"
-              >{{ v.name }}</a
+              >{{ v.title }}</a
             >
           }
         </nav>

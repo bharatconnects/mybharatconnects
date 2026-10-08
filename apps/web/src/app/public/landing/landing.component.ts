@@ -10,9 +10,10 @@ import { FooterComponent } from '../shared/footer.component';
 import { PhoneInputComponent } from '../../shared/components/phone-input/phone-input.component';
 import { ScrollRevealDirective } from '../../shared/directives/scroll-reveal.directive';
 import { CountUpDirective } from '../../shared/directives/count-up.directive';
-import { SERVICE_VERTICALS } from '../../shared/data/service-catalog';
+import { SERVICE_VERTICALS, verticalBySlug } from '../../shared/data/service-catalog';
+import { ServiceSelectComponent } from '../../shared/components/service-select/service-select.component';
 import {
-  OTHER_SERVICE_VALUE,
+  GENERAL_CONSULTATION_VALUE,
   COUNTRY_OPTIONS,
   INTENT_OPTIONS,
   timezonesForCountry,
@@ -37,6 +38,7 @@ interface PublicTestimonial {
     NavbarComponent,
     FooterComponent,
     PhoneInputComponent,
+    ServiceSelectComponent,
     ScrollRevealDirective,
     CountUpDirective,
   ],
@@ -46,24 +48,27 @@ interface PublicTestimonial {
       class="bg-[var(--ivory-mute)] text-[var(--ink)] overflow-hidden whitespace-nowrap py-2 text-[11px] font-medium tracking-[0.14em] uppercase"
     >
       <div class="inline-block bb-ticker-track">
-        @for (v of verticals; track v.slug) {
+        @for (t of tickerItems; track t.text) {
           <span class="bb-ticker-span">
-            <a [routerLink]="['/services', v.slug]" class="bb-ticker-link">{{ v.name }}</a>
+            <a [routerLink]="t.link" [fragment]="t.fragment" class="bb-ticker-link">{{ t.text }}</a>
             &nbsp;·&nbsp;
           </span>
         }
-        <!-- 7 more aria-hidden copies (8 total). For a seamless loop the
+        <!-- 3 more aria-hidden copies (4 total). For a seamless loop the
              track must stay wider than the viewport at every point of the
              scroll, i.e. (copies-1) * oneCopyWidth >= viewport width; with
-             4 short items per copy (~600px), fewer copies visibly ran out
-             of content on wide desktop screens before looping. 8 copies
-             covers viewports up to ~4200px. -->
-        @for (copy of [1, 2, 3, 4, 5, 6, 7]; track copy) {
+             8 items per copy (~2600px) 4 copies cover viewports up to
+             ~7800px. The keyframe shifts exactly one copy (-25%). -->
+        @for (copy of [1, 2, 3]; track copy) {
           <span class="bb-ticker-span" aria-hidden="true">
-            @for (v of verticals; track v.slug) {
-              <a [routerLink]="['/services', v.slug]" class="bb-ticker-link" tabindex="-1">{{
-                v.name
-              }}</a>
+            @for (t of tickerItems; track t.text) {
+              <a
+                [routerLink]="t.link"
+                [fragment]="t.fragment"
+                class="bb-ticker-link"
+                tabindex="-1"
+                >{{ t.text }}</a
+              >
               &nbsp;·&nbsp;
             }
           </span>
@@ -83,13 +88,13 @@ interface PublicTestimonial {
            still solidifies it once the page scrolls, which is the entire
            "premium scroll" effect now that the hero itself is static.
            The photo carries a real image when one is supplied (drop
-           apps/web/public/hero.png) and falls back to the wheel motif on a
+           apps/web/public/hero.jpeg) and falls back to the wheel motif on a
            navy field otherwise — deliberate either way, never a broken
            image. -->
       <section class="bb-hero">
         <div class="bb-hero-inner">
           <div class="bb-hero-copy">
-            <p appReveal class="bb-hero-eyebrow">Trusted NRI services platform</p>
+            <p appReveal class="bb-hero-eyebrow">All-in-One Trusted NRI Platform</p>
             <h1 appReveal [revealDelay]="90" class="bb-hero-title">
               Expert India Services for<br class="hidden sm:block" />
               NRIs and Their Families
@@ -111,7 +116,7 @@ interface PublicTestimonial {
             </div>
             <div appReveal [revealDelay]="250" class="bb-hero-actions">
               <a href="#consultation" class="bb-hero-btn bb-hero-btn-primary">
-                Get in touch
+                Book Free Strategy Session
                 <i class="material-icons-outlined text-lg" aria-hidden="true">arrow_forward</i>
               </a>
               <a routerLink="/services" class="bb-hero-btn bb-hero-btn-ghost">Explore services</a>
@@ -145,7 +150,9 @@ interface PublicTestimonial {
                 <span class="bb-preview-dot"></span>
                 <span class="bb-preview-dot"></span>
               </div>
-              <span class="bb-preview-title">Case BB-2026-00184 · Property Sale</span>
+              <span class="bb-preview-title"
+                >Case #MBC-8921 · Property Sale &amp; Repatriation (Form 15CA/CB)</span
+              >
               <span class="bb-preview-live">
                 <span class="bb-preview-live-dot" aria-hidden="true"></span>
                 Live
@@ -182,21 +189,23 @@ interface PublicTestimonial {
               }
             </div>
             <div class="bb-preview-footer">
-              <i class="material-icons-outlined text-[15px]" aria-hidden="true">history</i>
-              Updated 2 hours ago by your advisor
+              <i class="material-icons-outlined text-[15px]" aria-hidden="true"
+                >notifications_active</i
+              >
+              Real-time updates via portal &amp; WhatsApp
             </div>
           </div>
 
           <div>
             <p appReveal class="bb-eyebrow">Professional services, managed</p>
-            <h2 appReveal [revealDelay]="80" class="bb-h2">
+            <h2 appReveal [revealDelay]="80" class="bb-h2 pb-5">
               One advisor for everything you need in India
             </h2>
-            <p appReveal [revealDelay]="140" class="bb-body mt-4">
-              Managing matters in India from abroad usually means chasing a different CA, lawyer,
-              and agent across twelve time zones. We replace that with a single accountable
-              relationship: your advisor coordinates every specialist, and you watch it happen on
-              a dashboard built for people who are not in the room.
+            <p appReveal [revealDelay]="140" class="bb-body">
+              Managing cross-border tax, inherited property, or local bank accounts usually means
+              dealing with fragmented agents and unreturned calls. MyBharatConnects gives you a
+              single accountable relationship: one dedicated advisor coordinates accredited
+              specialists while you monitor real-time progress on your dashboard.
             </p>
             <ul class="mt-7 flex flex-col gap-3.5">
               @for (p of introPoints; track p; let i = $index) {
@@ -209,75 +218,9 @@ interface PublicTestimonial {
               }
             </ul>
             <a routerLink="/about" class="bb-link-arrow mt-8" appReveal [revealDelay]="420">
-              More about us
+              Learn More About Our Approach
               <i class="material-icons-outlined text-base" aria-hidden="true">arrow_forward</i>
             </a>
-          </div>
-        </div>
-      </section>
-
-      <!-- ══ SERVICES ══ -->
-      <section class="px-4 sm:px-6 lg:px-10 py-16 sm:py-20" style="background: var(--ivory-soft)" id="services">
-        <div class="w-full">
-          <header appReveal class="max-w-2xl mb-12">
-            <p class="bb-eyebrow">What we do</p>
-            <h2 class="bb-h2">Everything you need. One platform.</h2>
-            <p class="bb-body mt-4">
-              Complete solutions across tax, wealth, property, and legal, handled by your
-              dedicated advisor from enquiry through settlement.
-            </p>
-          </header>
-
-          <ul class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 sm:gap-6">
-            @for (v of verticals; track v.slug; let i = $index) {
-              <li class="bb-service-card" appReveal [revealDelay]="i * 80">
-                <div class="bb-service-icon">
-                  <i class="material-icons-outlined" aria-hidden="true">{{ v.icon }}</i>
-                </div>
-                <h3 class="bb-h3">{{ v.name }}</h3>
-                <p class="bb-body-sm mt-2.5 mb-5">{{ v.blurb }}</p>
-                <ul class="flex flex-col gap-2 mb-6">
-                  @for (s of v.services.slice(0, 3); track s.name) {
-                    <li class="flex items-start gap-2.5 text-[15px] text-[var(--ink)]/75">
-                      <i
-                        class="material-icons-outlined text-[16px] mt-[3px] shrink-0 text-[var(--saffron)]"
-                        aria-hidden="true"
-                        >check</i
-                      >
-                      {{ s.name }}
-                    </li>
-                  }
-                </ul>
-                <a
-                  [routerLink]="['/services', v.slug]"
-                  class="bb-link-arrow"
-                  [attr.aria-label]="'Explore all services in ' + v.name"
-                >
-                  Explore all services
-                  <i class="material-icons-outlined text-base" aria-hidden="true">arrow_forward</i>
-                </a>
-                <span class="bb-service-numeral" aria-hidden="true">{{ '0' + (i + 1) }}</span>
-              </li>
-            }
-          </ul>
-        </div>
-      </section>
-
-      <!-- ══ WHY US ══ -->
-      <section class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20">
-        <div class="max-w-[1240px] mx-auto">
-          <header appReveal class="max-w-2xl mb-12">
-            <p class="bb-eyebrow">Why MyBharatConnects</p>
-            <h2 class="bb-h2">Built for the distance</h2>
-          </header>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            @for (w of whyUs; track w.title; let i = $index) {
-              <div class="bb-why-card" appReveal [revealDelay]="i * 70">
-                <i class="material-icons-outlined bb-why-icon" aria-hidden="true">{{ w.icon }}</i>
-                <h3 class="font-semibold text-[var(--ink)] text-[17px] mb-2">{{ w.title }}</h3>
-                <p class="bb-body-sm">{{ w.desc }}</p>
-              </div>
-            }
           </div>
         </div>
       </section>
@@ -294,7 +237,7 @@ interface PublicTestimonial {
         <div class="max-w-[1240px] mx-auto">
           <p appReveal class="bb-eyebrow-light">The process</p>
           <h2 appReveal class="bb-h2 !text-[var(--ivory)] !mb-16 sm:!mb-20 max-w-2xl">
-            How MyBharatConnects works
+            How We Handle Your Case
           </h2>
 
           <ol class="bb-flow-rail">
@@ -363,14 +306,86 @@ interface PublicTestimonial {
         }
       </section>
 
+      <!-- ══ SERVICES ══ -->
+      <section class="px-4 sm:px-6 lg:px-10 py-16 sm:py-20" style="background: var(--ivory-soft)" id="services">
+        <div class="w-full">
+          <header appReveal class="w-full mb-12">
+            <p class="bb-eyebrow">Core Services</p>
+            <h2 class="bb-h2 pb-5">End-to-End Solutions for Cross-Border Needs</h2>
+            <p class="bb-body text-pretty">
+              Complete, transparent solutions across tax, wealth, property, and legal matters,
+              managed by experienced professionals from enquiry through settlement.
+            </p>
+          </header>
+
+          <ul class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 sm:gap-6">
+            @for (v of verticals; track v.slug; let i = $index) {
+              <li
+                class="bb-service-card"
+                [style.--card-accent]="v.accent"
+                appReveal
+                [revealDelay]="i * 80"
+              >
+                <div class="bb-card-head">
+                  <div class="bb-card-head-icon">
+                    <i class="material-icons-outlined" aria-hidden="true">{{ v.icon }}</i>
+                  </div>
+                  <h3 class="bb-card-head-title">{{ v.title }}</h3>
+                  <span class="bb-card-head-num" aria-hidden="true">{{ '0' + (i + 1) }}</span>
+                </div>
+                <p class="bb-body-sm bb-service-blurb">{{ v.blurb }}</p>
+                <ul class="flex flex-col gap-2 mb-6">
+                  @for (h of v.highlights; track h) {
+                    <li class="flex items-start gap-2.5 text-[15px] text-[var(--ink)]/75">
+                      <i
+                        class="material-icons-outlined text-[16px] mt-[3px] shrink-0"
+                        [style.color]="v.accent"
+                        aria-hidden="true"
+                        >check</i
+                      >
+                      {{ h }}
+                    </li>
+                  }
+                </ul>
+                <a [routerLink]="['/services', v.slug]" class="bb-service-cta">
+                  {{ v.ctaLabel }}
+                  <i class="material-icons-outlined text-base" aria-hidden="true">arrow_forward</i>
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+
+      <!-- ══ WHY US ══ -->
+      <section class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20">
+        <div class="max-w-[1240px] mx-auto">
+          <header appReveal class="max-w-2xl mb-12">
+            <p class="bb-eyebrow">Why MyBharatConnects</p>
+            <h2 class="bb-h2">Built for the distance</h2>
+          </header>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            @for (w of whyUs; track w.title; let i = $index) {
+              <div class="bb-why-card" appReveal [revealDelay]="i * 70">
+                <i class="material-icons-outlined bb-why-icon" aria-hidden="true">{{ w.icon }}</i>
+                <h3 class="font-semibold text-[var(--ink)] text-[17px] mb-2">{{ w.title }}</h3>
+                <p class="bb-body-sm">{{ w.desc }}</p>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+
       <!-- ══ CONSULTATION FORM ══ -->
       <!-- scroll-mt clears the sticky header so the section isn't tucked
            underneath it when jumped to via the hero's #consultation link -->
       <section class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20 scroll-mt-24" id="consultation">
         <div class="max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] gap-10 lg:gap-14 items-start">
           <div appReveal>
-            <p class="bb-eyebrow">Get started today</p>
-            <h2 class="bb-h2">Talk to an expert</h2>
+            <p class="bb-eyebrow">Schedule a Consultation</p>
+            <h2 class="bb-h2 pb-5 text-balance">
+              Book Your Free <span class="whitespace-nowrap">30-Minute</span> Strategy Session
+            </h2>
             <p class="bb-body mt-4">
               Book a free 30-minute discovery call. We'll scope your situation and recommend
               exactly the services you need, with transparent pricing before you commit.
@@ -447,38 +462,14 @@ interface PublicTestimonial {
 
               <div class="bb-dark-field">
                 <label class="bb-dark-label" for="lead-service">What service do you need?</label>
-                <select
-                  id="lead-service"
-                  class="bb-dark-input bb-dark-select"
+                <app-service-select
+                  inputId="lead-service"
+                  [groups]="serviceGroups"
+                  [generalValue]="generalConsultationValue"
                   [(ngModel)]="lead.serviceType"
                   name="serviceType"
-                >
-                  <option value="" disabled selected>Choose a service…</option>
-                  @for (g of serviceGroups; track g.label) {
-                    <optgroup [label]="g.label">
-                      @for (s of g.options; track s) {
-                        <option [value]="s">{{ s }}</option>
-                      }
-                    </optgroup>
-                  }
-                  <option [value]="otherServiceValue">Other (please specify)</option>
-                </select>
+                />
               </div>
-
-              @if (lead.serviceType === otherServiceValue) {
-                <div class="bb-dark-field">
-                  <label class="bb-dark-label" for="lead-message">Tell us what you need</label>
-                  <textarea
-                    id="lead-message"
-                    class="bb-dark-input"
-                    rows="3"
-                    [(ngModel)]="lead.message"
-                    name="message"
-                    placeholder="Describe the service or situation you need help with…"
-                    required
-                  ></textarea>
-                </div>
-              }
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="bb-dark-field">
@@ -541,13 +532,13 @@ interface PublicTestimonial {
                   <span class="loading loading-spinner loading-sm"></span>
                   Sending…
                 } @else {
-                  Request Consultation
+                  Schedule Free Strategy Call
                   <i class="material-icons-outlined" aria-hidden="true">arrow_forward</i>
                 }
               </button>
 
               <p class="text-xs text-[var(--ivory)]/55 text-center mt-1 leading-relaxed">
-                By submitting you agree to receive follow-up from our team. No spam, ever.
+                Your information is strictly confidential. No spam policy.
               </p>
             </form>
             }
@@ -604,22 +595,29 @@ interface PublicTestimonial {
         style="background: linear-gradient(135deg, var(--saffron) 0%, var(--saffron-hover) 100%)"
       >
         <p class="text-[15px] font-semibold tracking-[0.22em] uppercase mb-4" style="color: #ffffff">
-          Take the first step
+          Get started today
         </p>
         <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[var(--navy-900)] mb-3 leading-[1.15] tracking-tight">
-          Ready to put India on autopilot?
+          Streamline Your India Financial &amp; Legal Matters
         </h2>
         <p class="mb-8 text-base" style="color: #ffffff">
-          Join 100+ NRIs who trust MyBharatConnects across tax, wealth, property, and legal.
+          Connect with a dedicated advisor today to manage your tax filings, property, and legal
+          affairs hassle-free.
         </p>
-        <a
-          routerLink="/auth/register"
-          class="bb-btn bb-btn-lg inline-flex"
-          style="background: var(--ink); color: var(--ivory); border-color: var(--ink)"
-        >
-          Create Free Account
-          <i class="material-icons-outlined" aria-hidden="true">arrow_forward</i>
-        </a>
+        <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+          <a
+            href="#consultation"
+            class="bb-btn bb-btn-lg inline-flex"
+            style="background: var(--ink); color: var(--ivory); border-color: var(--ink)"
+          >
+            Book Discovery Call
+            <i class="material-icons-outlined" aria-hidden="true">arrow_forward</i>
+          </a>
+          <a routerLink="/auth/register" class="bb-btn bb-btn-lg inline-flex bb-banner-btn-alt">
+            <i class="material-icons-outlined" aria-hidden="true">person_add</i>
+            Create Free Portal Account
+          </a>
+        </div>
       </section>
     </main>
 
@@ -627,19 +625,34 @@ interface PublicTestimonial {
   `,
   styles: [
     `
+      /* Secondary button on the orange CTA banner: outlined white, fills on hover. */
+      .bb-banner-btn-alt {
+        background: transparent;
+        color: #ffffff;
+        border: 2px solid #ffffff;
+      }
+      .bb-banner-btn-alt:hover {
+        background: #ffffff;
+        color: var(--ink);
+        border-color: #ffffff;
+      }
+
       /* ═══ Ticker ═══ */
       .bb-ticker-track {
-        animation: bb-ticker 34s linear infinite;
+        animation: bb-ticker 75s linear infinite;
+      }
+      .bb-ticker-track:hover {
+        animation-play-state: paused;
       }
       @keyframes bb-ticker {
         0% {
           transform: translateX(0);
         }
         100% {
-          /* Shift by exactly one copy's width (1 of 8 equal copies) so the
-           * next copy lands pixel-for-pixel where the previous one started
-           * — the loop reset is invisible since nothing on screen changes. */
-          transform: translateX(-12.5%);
+          /* Shift by exactly one copy's width (1 of 4 equal copies) so the
+           * next copy lands pixel-for-pixel where the previous one started,
+           * so the loop reset is invisible since nothing on screen changes. */
+          transform: translateX(-25%);
         }
       }
       .bb-ticker-link {
@@ -662,14 +675,14 @@ interface PublicTestimonial {
        * background up underneath the sticky navbar above, which stays
        * fully transparent at rest (navbar.component.ts's [immersive]
        * input) — so the two read as one uninterrupted photo rather than
-       * a bar sitting on top of a separate panel. If /hero.png is absent
+       * a bar sitting on top of a separate panel. If /hero.jpeg is absent
        * the gradient carries the panel, so there is never a broken-image
        * state. */
       .bb-hero {
         position: relative;
         overflow: hidden;
-        margin-top: -80px;
-        padding-top: 80px;
+        margin-top: -59px;
+        padding-top: 59px;
         /* Full-bleed to the true viewport edge, including underneath the
            vertical scrollbar gutter — without this, the section only fills
            html's *content* width (viewport minus scrollbar), leaving a
@@ -690,7 +703,7 @@ interface PublicTestimonial {
             rgba(12, 33, 53, 0.7) 45%,
             rgba(12, 33, 53, 0.92) 100%
           ),
-          url('/hero.png'),
+          url('/hero.jpeg'),
           linear-gradient(135deg, #1f4e79 0%, #12304d 55%, #0c2135 100%);
         background-size: cover, cover, cover;
         background-position: center, center, center;
@@ -872,9 +885,10 @@ interface PublicTestimonial {
       }
       @media (min-width: 1024px) {
         .bb-hero-trust {
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(5, 1fr);
+          gap: 18px;
           margin-top: 56px;
-          padding: 20px 28px;
+          padding: 20px 24px;
           max-width: none;
         }
       }
@@ -1415,10 +1429,20 @@ interface PublicTestimonial {
         display: block;
       }
 
-      /* ═══ Service cards ═══ */
+      /* ═══ Service cards ═══
+       * Header band styles (.bb-card-head*) are shared with the /services
+       * cards and live in styles.css. */
+      /* Plain mb-5 is neutralised by .bb-body-sm margin: 0, hence the class. */
+      .bb-service-blurb {
+        margin-bottom: 20px;
+      }
       .bb-service-card {
+        --card-pad-x: 32px;
+        --card-pad-y: 36px;
         position: relative;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
         padding: 36px 32px 32px;
         background: #ffffff;
         border: 1px solid var(--ivory-mute);
@@ -1428,59 +1452,59 @@ interface PublicTestimonial {
           box-shadow 0.25s ease,
           border-color 0.25s ease;
       }
+      /* When cards sit side by side, each spans four rows (header, blurb,
+       * bullets, button) of the parent grid via subgrid, so every blurb row is
+       * as tall as the longest one and the bullet lists start on the same line
+       * whatever the copy length. Single-column stays a plain flex column.
+       * Declared after the base rule so its display wins. */
+      @media (min-width: 768px) {
+        .bb-service-card {
+          display: grid;
+          grid-row: span 4;
+          grid-template-rows: subgrid;
+          row-gap: 0;
+        }
+      }
       .bb-service-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 16px 38px rgba(12, 33, 53, 0.11);
-        border-color: rgba(31, 78, 121, 0.35);
+        border-color: color-mix(in srgb, var(--card-accent) 45%, transparent);
       }
-      .bb-service-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background: var(--saffron);
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 0.3s ease;
+      .bb-service-card:hover .bb-card-head-icon {
+        transform: scale(1.06);
       }
-      .bb-service-card:hover::before {
-        transform: scaleX(1);
-      }
-      .bb-service-icon {
-        display: inline-flex;
+      /* Pinned to the bottom of the card (the card is a flex column) so the
+       * buttons line up across all four cards whatever the content above. */
+      .bb-service-cta {
+        margin-top: auto;
+        display: flex;
         align-items: center;
         justify-content: center;
-        width: 54px;
-        height: 54px;
-        border-radius: 14px;
-        background: var(--navy-50);
-        color: var(--brand-navy);
-        margin-bottom: 22px;
+        gap: 8px;
+        height: 60px;
+        padding: 10px 16px;
+        border: 1.5px solid var(--card-accent);
+        border-radius: 10px;
+        font-size: 14.5px;
+        font-weight: 700;
+        line-height: 1.3;
+        text-align: center;
+        color: var(--card-accent);
+        text-decoration: none;
         transition:
-          background-color 0.25s ease,
-          color 0.25s ease,
-          transform 0.25s ease;
+          background-color 0.2s ease,
+          color 0.2s ease,
+          gap 0.2s ease;
       }
-      .bb-service-icon i {
-        font-size: 27px;
-      }
-      .bb-service-card:hover .bb-service-icon {
-        background: var(--brand-navy);
+      .bb-service-cta:hover,
+      .bb-service-cta:focus-visible {
+        background: var(--card-accent);
         color: #ffffff;
-        transform: scale(1.05);
+        gap: 12px;
       }
-      .bb-service-numeral {
-        position: absolute;
-        top: 20px;
-        right: 24px;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        font-size: 19px;
-        font-weight: 800;
-        color: var(--ink);
-        opacity: 0.14;
-        letter-spacing: 0.02em;
+      .bb-service-cta:focus-visible {
+        outline: 2px solid var(--card-accent);
+        outline-offset: 2px;
       }
 
       /* ═══ Testimonials ═══
@@ -1599,7 +1623,11 @@ interface PublicTestimonial {
         border-radius: 20px;
         padding: 30px 26px;
         border-top: 3px solid var(--saffron);
-        box-shadow: 0 24px 60px rgba(12, 33, 53, 0.2);
+        box-shadow:
+          0 2px 6px rgba(12, 33, 53, 0.12),
+          0 14px 28px rgba(12, 33, 53, 0.18),
+          0 38px 80px rgba(12, 33, 53, 0.34),
+          0 18px 60px -10px rgba(232, 119, 34, 0.18);
       }
       @media (min-width: 640px) {
         .bb-form-card {
@@ -1800,12 +1828,35 @@ interface PublicTestimonial {
 })
 export class LandingComponent implements OnInit {
   readonly verticals = SERVICE_VERTICALS;
-  readonly serviceGroups = SERVICE_VERTICALS.map((v) => ({
-    label: v.name,
-    options: v.services.map((s) => s.name),
+
+  readonly tickerItems: { text: string; link: string[]; fragment?: string }[] = [
+    { text: 'Cross-Border Tax & Compliance', link: ['/services', 'tax-compliance'] },
+    { text: 'Remote Real Estate Management', link: ['/services', 'real-estate'] },
+    { text: 'NRI Wealth Advisory', link: ['/services', 'wealth-management'] },
+    { text: 'Legal Heir & Property Mutation', link: ['/services', 'legal-documents'] },
+    { text: 'US Time-Zone Support', link: ['/'], fragment: 'consultation' },
+    {
+      text: 'Upcoming India ITR Filing Deadline: Book a CA Strategy Session',
+      link: ['/'],
+      fragment: 'consultation',
+    },
+    { text: 'Lower TDS Certificates (Form 13)', link: ['/services', 'tax-compliance'] },
+    { text: '15CA/15CB Repatriation Support', link: ['/services', 'tax-compliance'] },
+  ];
+  // Dropdown sections, in display order. The labels are for the picker only;
+  // the submitted value stays the service name from the catalog.
+  readonly serviceGroups = [
+    { slug: 'tax-compliance', label: 'Tax & Compliance' },
+    { slug: 'real-estate', label: 'Real Estate' },
+    { slug: 'wealth-management', label: 'Wealth Management' },
+    { slug: 'legal-documents', label: 'Legal Services' },
+  ].map(({ slug, label }) => ({
+    label,
+    icon: verticalBySlug(slug)?.icon ?? 'apps',
+    options: (verticalBySlug(slug)?.services ?? []).map((s) => s.name),
   }));
 
-  readonly otherServiceValue = OTHER_SERVICE_VALUE;
+  readonly generalConsultationValue = GENERAL_CONSULTATION_VALUE;
   readonly countryOptions = COUNTRY_OPTIONS;
   readonly intentOptions = INTENT_OPTIONS;
 
@@ -1817,7 +1868,6 @@ export class LandingComponent implements OnInit {
     country: '',
     timezone: '',
     intentTag: '',
-    message: '',
   };
   leadSubmitting = false;
   leadSubmitted = false;
@@ -1907,13 +1957,9 @@ export class LandingComponent implements OnInit {
   }
 
   async onLeadSubmit() {
-    const { name, email, phone, serviceType, country, timezone, intentTag, message } = this.lead;
+    const { name, email, phone, serviceType, country, timezone, intentTag } = this.lead;
     if (!name || !email || !serviceType) {
       this.leadError = 'Please fill in your name, email, and the service you need.';
-      return;
-    }
-    if (serviceType === this.otherServiceValue && !message.trim()) {
-      this.leadError = 'Please tell us what you need.';
       return;
     }
     this.leadError = '';
@@ -1928,7 +1974,6 @@ export class LandingComponent implements OnInit {
         country,
         timezone,
         intentTag,
-        message: message.trim() || undefined,
         recaptchaToken,
       })
       .subscribe({
@@ -1952,7 +1997,6 @@ export class LandingComponent implements OnInit {
       country: '',
       timezone: '',
       intentTag: '',
-      message: '',
     };
     this.leadSubmitted = false;
     this.leadError = '';
@@ -1963,22 +2007,23 @@ export class LandingComponent implements OnInit {
     { icon: 'schedule', label: 'US-hours support' },
     { icon: 'lock', label: 'Secure document vault' },
     { icon: 'receipt_long', label: 'Transparent pricing' },
+    { icon: 'support_agent', label: 'Dedicated Single Point of Contact' },
   ];
 
   // Mirrors the real case pipeline shown in the client dashboard.
   previewSteps = [
-    { label: 'Enquiry received', state: 'done' },
-    { label: 'Advisor assigned', state: 'done' },
-    { label: 'Quotes from vetted specialists', state: 'active' },
-    { label: 'Documents & execution', state: 'todo' },
-    { label: 'Completion & sign-off', state: 'todo' },
+    { label: 'Requirements Scoped & Assigned', state: 'done' },
+    { label: 'Dedicated Advisor Onboarded', state: 'done' },
+    { label: 'Reviewing Vetted CA & Legal Quotes', state: 'active' },
+    { label: 'Document Execution & Vault Upload', state: 'todo' },
+    { label: 'Final Settlement & Clearance', state: 'todo' },
   ];
 
   introPoints = [
-    'One dedicated advisor coordinating every specialist on your file',
-    'Every CA, lawyer, and property partner verified before they touch your case',
-    'Quotes, milestones, and documents tracked in one place',
-    'Nothing moves without your approval',
+    'Dedicated Relationship Manager assigned to your time zone',
+    'Vetted network of ICAI-registered CAs and Bar Council attorneys',
+    'Centralized dashboard for document sharing, quotes, and milestone tracking',
+    '100% approval workflow, no work begins without explicit authorization',
   ];
 
   consultPoints = [
@@ -2021,26 +2066,26 @@ export class LandingComponent implements OnInit {
     {
       num: '01',
       icon: 'edit_note',
-      title: 'Submit Enquiry',
-      desc: 'Tell us your requirements: the service, your situation, and any deadline.',
+      title: 'Share Your Needs',
+      desc: 'Submit your requirements, timelines, and relevant details online.',
     },
     {
       num: '02',
       icon: 'headset_mic',
-      title: 'Discovery Call',
-      desc: 'Your dedicated advisor calls within 24 hours to understand your needs deeply.',
+      title: 'Free Discovery Call',
+      desc: 'Speak with an advisor in your time zone within 24 hours to scope the project.',
     },
     {
       num: '03',
       icon: 'description',
-      title: 'Curated Proposals',
-      desc: 'We match you with vetted specialists and send tailored quotes for your approval.',
+      title: 'Review Fixed Proposal',
+      desc: 'Receive transparent, itemized quotes for approval.',
     },
     {
       num: '04',
       icon: 'verified',
-      title: 'Seamless Delivery',
-      desc: 'Track your case end-to-end on the dashboard. We handle every detail.',
+      title: 'Track to Completion',
+      desc: 'Follow real-time milestones and approve finalized deliverables on your portal.',
     },
   ];
 }

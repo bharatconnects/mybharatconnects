@@ -19,6 +19,15 @@ export interface ServiceVertical {
   name: string;
   icon: string; // material icon
   blurb: string;
+  /** Marketing headline for cards and pages. `name` stays the short stored
+   * identifier (vendor skills, case filters), so never display-only edit it. */
+  title: string;
+  /** Header colour for this practice area's cards. */
+  accent: string;
+  /** Three featured offerings shown as the bullet list on cards. */
+  highlights: string[];
+  /** Label for the card button, specific to this practice area. */
+  ctaLabel: string;
   services: ServiceDef[];
   /** Hero banner photo path under apps/web/public/ — falls back to an
    * accent-colored gradient (service-detail.component.ts) when the file
@@ -32,9 +41,17 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     slug: 'tax-compliance',
     name: 'Tax & Compliance',
     icon: 'account_balance',
+    title: 'Cross-Border Tax & Compliance',
+    accent: '#1f4e79',
+    highlights: [
+      'Lower TDS Certificate (Form 13) to minimize withholding tax',
+      'Form 15CA & 15CB Repatriation Certificates',
+      'Comprehensive India & Overseas Tax Filing Bundles',
+    ],
+    ctaLabel: 'Explore Tax Solutions',
     bannerImage: '/service-tax-compliance.jpg',
     blurb:
-      'India and US tax filings, repatriation certificates, notice responses, and cross-border compliance, handled end-to-end by empanelled CAs.',
+      'Optimize tax obligations and stay compliant across jurisdictions with end-to-end assistance from accredited CAs.',
     services: [
       { name: 'Lower TDS Certificate (Form 13)' },
       { name: '15CA / 15CB Repatriation Filing' },
@@ -56,9 +73,17 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     slug: 'wealth-management',
     name: 'Wealth Management',
     icon: 'trending_up',
+    title: 'NRI Wealth & Investment Advisory',
+    accent: '#b45309',
+    highlights: [
+      'Seamless NRI Mutual Fund Onboarding & KYC setup',
+      'Cross-Border Property Loans & Refinancing',
+      'GIFT-City Advisory & Insurance Claim Recovery',
+    ],
+    ctaLabel: 'Consult Wealth Management',
     bannerImage: '/service-wealth-management.jpg',
     blurb:
-      'Investments, insurance, loans, and goal-based planning built for the NRI balance sheet: from mutual fund onboarding to GIFT-City advisory.',
+      'Align your investments with global financial goals through specialized NRI wealth solutions.',
     services: [
       { name: 'NRI Mutual Fund Onboarding (Investment Marketplace)' },
       { name: 'NRI Loan Referral Desk' },
@@ -76,9 +101,17 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     slug: 'real-estate',
     name: 'Real Estate',
     icon: 'home_work',
+    title: 'Property Management & Sales',
+    accent: '#0f766e',
+    highlights: [
+      'Complete Remote Property Management & Tenant Placement',
+      'Property Sale Execution & Tax-Optimized Capital Gains',
+      'HNI Real Estate Portfolio Curation',
+    ],
+    ctaLabel: 'Manage Property',
     bannerImage: '/service-real-estate.jpg',
     blurb:
-      'Property management, sale, estate planning, and curated investment for NRI-owned real estate across India.',
+      'Manage, invest in, lease, or sell real estate assets across India without having to travel.',
     services: [
       { name: 'NRI Property Management' },
       { name: 'NRI Estate Planning Suite' },
@@ -101,9 +134,17 @@ export const SERVICE_VERTICALS: ServiceVertical[] = [
     slug: 'legal-documents',
     name: 'Legal Documents',
     icon: 'gavel',
+    title: 'Legal & Estate Planning',
+    accent: '#8b2f45',
+    highlights: [
+      'Succession & Legal Heir Certificate processing',
+      'Property Title Transfer & Revenue Mutation',
+      'Power of Attorney (PoA) Drafting & Legal Registration',
+    ],
+    ctaLabel: 'Consult Legal Team',
     bannerImage: '/service-legal-documents.jpg',
     blurb:
-      'Succession, property transfer, mutation, banking claims, and repatriation paperwork, with court and authority work handled locally on your behalf.',
+      'Navigate property transfers, local authorities, and inheritance documentation with on-ground legal representation.',
     services: [
       {
         name: 'Succession & Legal Heir Certificate',

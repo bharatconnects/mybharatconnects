@@ -447,7 +447,7 @@ interface CaseManager {
                 id="assign-manager"
                 [(ngModel)]="selectedManagerId"
                 [options]="caseManagerOptions()"
-                placeholder="— Select a case manager —"
+                placeholder="Select a case manager"
               ></app-bb-select>
             </div>
           }

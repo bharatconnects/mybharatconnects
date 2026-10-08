@@ -61,12 +61,12 @@ export class RecaptchaService {
         ? `${cause.code ?? ''} ${cause.message ?? ''}`.trim()
         : (err as Error)?.message;
       this.logger.error(`reCAPTCHA siteverify unreachable: ${detail}`, (err as Error)?.stack);
-      throw new BadRequestException('reCAPTCHA verification failed — please try again');
+      throw new BadRequestException('reCAPTCHA verification failed. Please try again');
     }
 
     if (!res.ok) {
       this.logger.warn(`reCAPTCHA siteverify HTTP ${res.status}`);
-      throw new BadRequestException('reCAPTCHA verification failed — please try again');
+      throw new BadRequestException('reCAPTCHA verification failed. Please try again');
     }
 
     const data = (await res.json()) as SiteVerifyResponse;
@@ -77,7 +77,7 @@ export class RecaptchaService {
       this.logger.warn(
         `reCAPTCHA rejected: success=${data.success} score=${data.score} action=${data.action} errors=${(data['error-codes'] ?? []).join(',')}`,
       );
-      throw new BadRequestException('reCAPTCHA verification failed — please try again');
+      throw new BadRequestException('reCAPTCHA verification failed. Please try again');
     }
   }
 }

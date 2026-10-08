@@ -87,7 +87,7 @@ const STATUS_BADGE: Record<string, string> = {
       } @else if (errorMessage) {
         <div class="flex items-center gap-2 px-4 py-2.5 rounded-lg mb-4 text-sm bg-error/10 text-error border border-error/20">
           <i class="material-icons-outlined text-base">error_outline</i>
-          <span class="flex-1">Could not load your cases — {{ errorMessage }}</span>
+          <span class="flex-1">Could not load your cases: {{ errorMessage }}</span>
           <button class="bb-btn bb-btn-ghost bb-btn-sm" (click)="reload()">Retry</button>
         </div>
       } @else if (cases.length === 0) {

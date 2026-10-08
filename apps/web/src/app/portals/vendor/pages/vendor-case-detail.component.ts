@@ -449,7 +449,7 @@ interface InvoiceItemForm {
                         rows="2"
                         [(ngModel)]="vendorReplyText"
                         [ngModelOptions]="{ standalone: true }"
-                        placeholder="e.g. Can't go below this without dropping quality — happy to explain the breakdown."
+                        placeholder="e.g. Can't go below this without dropping quality, happy to explain the breakdown."
                       ></textarea>
                       <div class="flex gap-2 justify-end">
                         <button class="bb-btn bb-btn-ghost bb-btn-sm" (click)="cancelVendorReply()">
@@ -893,7 +893,7 @@ interface InvoiceItemForm {
           <div class="bb-card-body">
             <h3 class="bb-section-title">Invoices</h3>
             <p class="text-sm text-base-content/60 mb-3">
-              Once you've received a payout, create an invoice for your records — tag it to the
+              Once you've received a payout, create an invoice for your records. Tag it to the
               specific milestone that was paid, or to the case itself for a fixed-price
               engagement.
             </p>
@@ -936,7 +936,7 @@ interface InvoiceItemForm {
                 @for (m of q.milestones; track m._id) {
                   @if (m.status !== 'PENDING' && !hasInvoiceForMilestone(m._id)) {
                     <div class="flex items-center gap-2 mb-2">
-                      <span class="text-sm">{{ m.sequence }}. {{ m.title }} — not yet invoiced</span>
+                      <span class="text-sm">{{ m.sequence }}. {{ m.title }} (not yet invoiced)</span>
                       <button
                         class="bb-btn bb-btn-outline bb-btn-sm"
                         (click)="openInvoiceForm(q, m)"
@@ -1064,7 +1064,7 @@ interface InvoiceItemForm {
                   <div class="pt-3 border-t border-base-300">
                     <label class="bb-label" for="inv-attachment"
                       >Attach a bill or receipt
-                      <span class="normal-case text-base-content/50">(optional — image, PDF or doc)</span></label
+                      <span class="normal-case text-base-content/50">(optional: image, PDF or doc)</span></label
                     >
                     <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                       <input
@@ -1147,7 +1147,7 @@ interface InvoiceItemForm {
                         {{
                           q.quoteType === 'MILESTONE' ? m.sequence + '. ' + m.title : 'Work approved by client'
                         }}
-                        — not yet requested
+                        (not yet requested)
                       </span>
                       <button
                         class="bb-btn bb-btn-outline bb-btn-sm"
@@ -1160,7 +1160,7 @@ interface InvoiceItemForm {
                 }
               } @else if (caseDetail.status === 'CLOSED' && !hasPaymentForQuote()) {
                 <div class="flex items-center gap-2 mb-2">
-                  <span class="text-sm">Case closed — payment not yet requested</span>
+                  <span class="text-sm">Case closed, payment not yet requested</span>
                   <button class="bb-btn bb-btn-outline bb-btn-sm" (click)="openPaymentRequestForm()">
                     Request Payment
                   </button>
@@ -1385,7 +1385,7 @@ export class VendorCaseDetailComponent implements OnInit {
     this.api.get<CaseDetail>(`/cases/${routeId}`).subscribe({
       next: (c) => {
         this.caseDetail = c;
-        this.pageTitleService.set(c.caseNumber + ' — My Jobs');
+        this.pageTitleService.set(c.caseNumber + ' | My Jobs');
         this.loading = false;
         this.loadQuotes(c._id);
         this.loadDocuments(c._id);
@@ -1500,7 +1500,7 @@ export class VendorCaseDetailComponent implements OnInit {
       next: (updated) => {
         this.deletingQuoteId = null;
         this.quotes = this.quotes.map((qq) => (qq._id === q._id ? updated : qq));
-        this.toast.success('Quote deleted — you can submit a new one now');
+        this.toast.success('Quote deleted. You can submit a new one now');
       },
       error: (err) => {
         this.deletingQuoteId = null;
@@ -1550,9 +1550,9 @@ export class VendorCaseDetailComponent implements OnInit {
       case 'PENDING':
         return 'Pending';
       case 'VENDOR_MARKED_DONE':
-        return 'Marked done — awaiting client confirmation';
+        return 'Marked done, awaiting client confirmation';
       case 'CLIENT_APPROVED':
-        return 'Client confirmed — awaiting payment';
+        return 'Client confirmed, awaiting payment';
       case 'PAID':
         return 'Paid';
       default:
@@ -1903,7 +1903,7 @@ export class VendorCaseDetailComponent implements OnInit {
       next: (updated) => {
         this.milestoneBusyId = null;
         this.quotes = this.quotes.map((qq) => (qq._id === q._id ? updated : qq));
-        this.toast.success('Milestone marked complete — awaiting CM approval');
+        this.toast.success('Milestone marked complete, awaiting CM approval');
       },
       error: (err) => {
         this.milestoneBusyId = null;
@@ -2135,7 +2135,7 @@ export class VendorCaseDetailComponent implements OnInit {
       .requestUploadUrl({
         caseId: this.caseDetail._id,
         category: 'FINANCIAL',
-        name: `Invoice attachment — ${file.name}`,
+        name: `Invoice attachment: ${file.name}`,
         originalFileName: file.name,
         mimeType: file.type || 'application/octet-stream',
         sizeBytes: file.size,
@@ -2222,7 +2222,7 @@ export class VendorCaseDetailComponent implements OnInit {
     const file = this.uploadFile;
     if (this.documents.some((d) => d.name === file.name)) {
       this.toast.error(
-        `A document named "${file.name}" already exists on this case — rename the file and try again.`,
+        `A document named "${file.name}" already exists on this case. Rename the file and try again.`,
       );
       return;
     }

@@ -5,57 +5,52 @@ import { NavbarComponent } from '../shared/navbar.component';
 import { FooterComponent } from '../shared/footer.component';
 import { ScrollRevealDirective } from '../../shared/directives/scroll-reveal.directive';
 
-interface Offer {
+interface StoryBlock {
+  heading: string;
+  body: string;
+}
+
+interface Pillar {
   icon: string;
   title: string;
   desc: string;
 }
 
-interface Founder {
-  photo: string;
-  name: string;
-  role: string;
-  bio: string;
-  quote: string;
-}
-
-const FOUNDERS: Founder[] = [
+const STORY: StoryBlock[] = [
   {
-    photo: '/founder-atul-jain.jpg',
-    name: 'Atul Jain',
-    role: 'Co-Founder, US Operations & Client Experience',
-    bio: 'Atul brings more than 25 years of professional and leadership experience across the United States, India, and global organizations, with a focus on complex business operations, compliance, and delivering outcomes across large, geographically distributed teams. At My Bharat Connects, he leads US-facing operations and client experience: accountability, transparency, and execution at every step. His role is not simply to connect clients with a service provider; it is to make sure the connection works.',
-    quote: 'When someone trusts you with something important, you own the outcome.',
+    heading: 'The NRI Reality',
+    body: 'Every NRI knows the moment. A parent in India needs an urgent document signed. A family property sits quiet for months while uncertainty builds. Or an unexpected tax notice from India arrives in your inbox on a Tuesday morning in New Jersey, leaving you twelve time zones and one anxious phone call away from a solution.',
   },
   {
-    photo: '/founder-reshu-jain.jpg',
-    name: 'Reshu Jain',
-    role: 'Co-Founder, Real Estate, Community Services & Educator',
-    bio: 'Reshu brings more than 20 years of experience in education, alongside professional experience as a Realtor, Notary Public, and real estate developer in North Carolina, a career built around people, families, property, and the trust that comes with helping others navigate important decisions. Her background gives My Bharat Connects a practical understanding of what NRIs face when managing property, documents, and family matters from abroad.',
-    quote: 'Behind every request is a person, a family, and something that matters to them.',
+    heading: 'Why We Built the Bridge',
+    body: 'MyBharatConnects was founded by US-based NRIs who lived those exact challenges. We operate directly from the United States to ensure every engagement begins here, is managed here, and stays fully accountable in your time zone. When you reach out, you speak with a team that knows your file and stays with you from inquiry to final resolution.',
+  },
+  {
+    heading: 'Our Mission',
+    body: 'To provide US-based NRIs with a single, trusted platform for managed tax, legal, and real estate services in India, combining verified local execution with seamless US-based relationship management.',
   },
 ];
 
-const OFFERS: Offer[] = [
+const PILLARS: Pillar[] = [
   {
     icon: 'verified_user',
-    title: 'Verified professionals only',
-    desc: 'Every Chartered Accountant, lawyer, property manager, and specialist on our platform is credential-verified and reference-checked before they ever handle a client engagement.',
+    title: 'Thoroughly Verified Specialists',
+    desc: 'Every Chartered Accountant, advocate, property manager, and consultant on our panel is credential-verified and reference-checked before taking on client files.',
   },
   {
     icon: 'support_agent',
-    title: 'Managed, not just matched',
-    desc: 'A dedicated relationship manager owns your file end-to-end. You are never handed off, never left chasing for updates.',
+    title: 'Fully Managed, Never Just Matched',
+    desc: 'You are assigned a dedicated relationship manager who owns your file end-to-end. No hand-offs, no chasing multiple vendors, and no unreturned messages.',
   },
   {
     icon: 'visibility',
-    title: 'Transparent by design',
-    desc: 'Our CRM-driven workflow keeps you informed at every stage: what is happening, who is doing it, what is next, so you’re in the loop with each step.',
+    title: 'Transparent CRM Tracking',
+    desc: 'Monitor real-time progress through our digital portal. View document updates, active milestones, and next steps with complete clarity.',
   },
   {
     icon: 'public',
-    title: 'Global framework, local execution',
-    desc: 'Legal compliance, taxation, real estate, and documentation services delivered with the discipline of a global firm and the familiarity of home.',
+    title: 'Global Governance, Local Execution',
+    desc: 'We deliver cross-border tax, legal, and property solutions with the institutional discipline of a global firm and the care of a trusted neighbor.',
   },
 ];
 
@@ -72,115 +67,103 @@ const OFFERS: Offer[] = [
         class="px-6 sm:px-8 lg:px-12 pt-14 pb-12"
         style="background: radial-gradient(ellipse 80% 55% at 50% -10%, rgba(31,78,121,0.1) 0%, transparent 60%), var(--ivory)"
       >
-        <div class="max-w-3xl mx-auto text-center">
+        <div class="max-w-5xl mx-auto text-center">
           <p appReveal class="font-mono text-[15px] tracking-widest text-[var(--saffron-deep)] mb-4 uppercase">
-            About My Bharat Connects
+            Our Story &amp; Mission
           </p>
           <h1
             appReveal
             [revealDelay]="80"
-            class="font-serif font-light text-[var(--ink)] text-4xl sm:text-5xl leading-[1.1] mb-6"
+            class="font-serif font-light text-[var(--ink)] text-4xl sm:text-5xl leading-[1.15]"
           >
-            Built by NRIs.<br />
-            <em class="italic text-[var(--saffron)]">Designed for NRIs.</em>
+            <span class="block text-balance">Built by NRIs. Designed for NRIs,</span>
+            <em class="block text-balance italic text-[var(--saffron)]"
+              >Operated in the US. Accountable to You.</em
+            >
           </h1>
-          <p appReveal [revealDelay]="160" class="text-base sm:text-lg text-[var(--ink)]/75 leading-relaxed">
-            Every NRI knows the moment. The parent who needs a document signed and it can't wait.
-            The property that has sat quiet for a year and something feels wrong. The tax notice
-            from India that arrives in your inbox on a Tuesday morning in New Jersey, and
-            suddenly you are twelve time zones and one anxious phone call away from a solution.
-          </p>
         </div>
       </section>
 
       <!-- Story -->
-      <section class="px-6 sm:px-8 lg:px-12 py-14 sm:py-16" style="background: var(--ivory)">
-        <div class="max-w-3xl mx-auto flex flex-col gap-6">
-          <p appReveal class="font-serif text-xl sm:text-2xl font-light text-[var(--ink)] leading-snug">
-            So, we built the bridge ourselves.
-          </p>
-          <p appReveal class="text-base text-[var(--ink)]/75 leading-relaxed">
-            My Bharat Connects was founded in 2026 by a team of NRIs based in the US who lived
-            those same challenges: managing important matters in India while being thousands of
-            miles away.
-          </p>
-          <p appReveal class="text-base text-[var(--ink)]/75 leading-relaxed">
-            We operate from the United States, close to the clients we serve. Every relationship
-            begins here, is managed here, and stays accountable here. When you call us, you reach
-            a team in your time zone who knows your file, remembers your last conversation, and
-            will not hand you off to a stranger.
-          </p>
-          <p appReveal class="text-base text-[var(--ink)]/75 leading-relaxed">
-            Behind the platform is a leadership team with over 25 years of combined experience in
-            managing legal compliance and real estate within a global framework. That's the same
-            kind of complex, cross-border matters our clients bring to us. Having that understanding and
-            experience shapes everything we do, from how we vet professionals to how we manage
-            each engagement.
-          </p>
-          <p appReveal class="text-base text-[var(--ink)]/75 leading-relaxed">
-            Our mission is to give NRIs based in the US a single, trusted platform that connects
-            them with verified professionals and managed services across India. Instead of leaving
-            you to coordinate with multiple providers, we manage every engagement through a
-            dedicated relationship team: one point of contact, transparent communication, and full
-            accountability.
-          </p>
+      <section class="px-6 sm:px-8 lg:px-12 py-12 sm:py-16" style="background: var(--ivory)">
+        <div class="max-w-3xl mx-auto flex flex-col gap-10">
+          @for (b of story; track b.heading; let i = $index) {
+            <div appReveal [revealDelay]="i * 80">
+              <h2 class="font-serif text-2xl sm:text-3xl font-light text-[var(--ink)] leading-snug mb-3">
+                {{ b.heading }}
+              </h2>
+              <p class="text-base sm:text-[17px] text-[var(--ink)]/75 leading-relaxed">{{ b.body }}</p>
+            </div>
+          }
         </div>
       </section>
 
       <!-- Leadership -->
-      <section class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20" style="background: var(--ivory)">
-        <div class="max-w-5xl mx-auto">
-          <header appReveal class="text-center mb-12 max-w-xl mx-auto">
-            <p class="font-mono text-[15px] tracking-[0.22em] text-[var(--saffron-deep)] mb-4">
-              LEADERSHIP
+      <section class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20" style="background: var(--ivory-soft)">
+        <div class="max-w-3xl mx-auto">
+          <header appReveal class="text-center mb-10">
+            <p class="font-mono text-[15px] tracking-[0.22em] text-[var(--saffron-deep)] mb-4 uppercase">
+              Leadership &amp; Governance
             </p>
             <h2 class="font-serif text-3xl sm:text-4xl font-light text-[var(--ink)] leading-[1.15]">
-              Who's behind My Bharat Connects
+              Who's Behind MyBharatConnects
             </h2>
           </header>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
-            @for (f of founders; track f.name; let i = $index) {
-              <div class="bb-founder-card" appReveal [revealDelay]="i * 90">
-                <div class="bb-founder-header">
-                  <img [src]="f.photo" [alt]="f.name" class="bb-founder-photo" />
-                  <div>
-                    <h3 class="font-semibold text-[var(--ink)] text-lg mb-1">{{ f.name }}</h3>
-                    <p class="text-xs font-medium text-[var(--saffron-deep)] uppercase tracking-wide">
-                      {{ f.role }}
-                    </p>
-                  </div>
-                </div>
-                <p class="text-sm text-[var(--ink)]/70 leading-relaxed mb-4 mt-4">{{ f.bio }}</p>
-                <p class="font-serif italic text-[var(--ink)]/85 text-[15px] leading-snug">
-                  "{{ f.quote }}"
-                </p>
-              </div>
-            }
+          <div class="flex flex-col gap-5">
+            <p appReveal class="text-base sm:text-[17px] text-[var(--ink)]/75 leading-relaxed">
+              Behind My Bharat Connects is an executive team with over 25 years of combined
+              experience spanning legal compliance, real estate management, corporate operations,
+              and client advocacy across the United States and India.
+            </p>
+            <p appReveal [revealDelay]="80" class="text-base sm:text-[17px] text-[var(--ink)]/75 leading-relaxed">
+              Having managed complex international portfolios and family matters firsthand, our
+              leadership team understands the operational precision and empathy required to handle
+              affairs from afar. We don't just connect you with specialists; we manage every
+              engagement from start to finish to guarantee results.
+            </p>
           </div>
+
+          <blockquote appReveal [revealDelay]="160" class="bb-quote">
+            "Behind every request is a person, a family, and something that matters to them. When
+            you trust us with your affairs, we own the outcome."
+          </blockquote>
         </div>
       </section>
 
-      <!-- What we offer -->
-      <section class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20" style="background: var(--ivory-soft)">
+      <!-- Team photo -->
+      <section class="px-6 sm:px-8 lg:px-12 pt-4 pb-4 sm:pb-6" style="background: var(--ivory)">
+        <figure appReveal class="bb-team-photo max-w-3xl mx-auto">
+          <img
+            src="/about-team.jpg"
+            width="975"
+            height="592"
+            loading="lazy"
+            alt="A MyBharatConnects advisor reviewing documents on a tablet with an NRI family"
+          />
+        </figure>
+      </section>
+
+      <!-- Advantage -->
+      <section class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20" style="background: var(--ivory)">
         <div class="max-w-5xl mx-auto">
-          <header appReveal class="text-center mb-12 max-w-xl mx-auto">
-            <p class="font-mono text-[15px] tracking-[0.22em] text-[var(--saffron-deep)] mb-4">
-              WHAT WE OFFER
+          <header appReveal class="text-center mb-12 max-w-3xl mx-auto">
+            <p class="font-mono text-[15px] tracking-[0.22em] text-[var(--saffron-deep)] mb-4 uppercase">
+              The MyBharatConnects Advantage
             </p>
-            <h2 class="font-serif text-3xl sm:text-4xl font-light text-[var(--ink)] leading-[1.15]">
-              How we work
+            <h2 class="font-serif text-3xl sm:text-4xl font-light text-[var(--ink)] leading-[1.15] text-balance">
+              How We Deliver Complete Peace of Mind
             </h2>
           </header>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-            @for (o of offers; track o.title; let i = $index) {
+            @for (p of pillars; track p.title; let i = $index) {
               <div class="bb-offer-card" appReveal [revealDelay]="i * 90">
                 <div class="bb-offer-icon">
-                  <i class="material-icons-outlined" aria-hidden="true">{{ o.icon }}</i>
+                  <i class="material-icons-outlined" aria-hidden="true">{{ p.icon }}</i>
                 </div>
-                <h3 class="font-semibold text-[var(--ink)] text-lg mb-2">{{ o.title }}</h3>
-                <p class="text-sm text-[var(--ink)]/70 leading-relaxed">{{ o.desc }}</p>
+                <h3 class="font-semibold text-[var(--ink)] text-lg mb-2">{{ p.title }}</h3>
+                <p class="text-sm text-[var(--ink)]/70 leading-relaxed">{{ p.desc }}</p>
               </div>
             }
           </div>
@@ -190,23 +173,23 @@ const OFFERS: Offer[] = [
       <!-- Closing + CTA -->
       <section
         class="px-6 sm:px-8 lg:px-12 py-16 sm:py-20 text-center"
-        style="background: var(--ink)"
+        style="background: linear-gradient(135deg, var(--saffron) 0%, var(--saffron-hover) 100%)"
       >
         <div class="max-w-2xl mx-auto">
-          <p appReveal class="text-lg sm:text-xl text-[var(--ivory)]/90 leading-relaxed mb-8 font-serif font-light">
-            At My Bharat Connects, we stand beside you, in your time zone, in your language, and
-            make sure India feels close again.
-          </p>
-          <p class="font-mono text-[15px] tracking-[0.22em] text-[var(--saffron)] mb-4 uppercase">
-            Ready to talk?
-          </p>
-          <h2 class="font-serif text-2xl sm:text-3xl font-light text-[var(--ivory)] mb-8 leading-snug">
-            Book a free consultation with our US team.
+          <h2 appReveal class="font-serif text-3xl sm:text-4xl font-light text-white mb-5 leading-snug">
+            Making India Feel Close Again
           </h2>
-          <a routerLink="/auth/register" class="bb-cta-btn">
-            Book Free Consultation
-            <i class="material-icons-outlined text-lg" aria-hidden="true">arrow_forward</i>
-          </a>
+          <p appReveal [revealDelay]="80" class="text-base sm:text-lg text-white/95 leading-relaxed mb-9">
+            We stand beside you in your time zone, on your schedule, so you can manage your assets
+            in India with absolute confidence.
+          </p>
+          <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+            <a routerLink="/" fragment="consultation" class="bb-cta-btn">
+              Schedule a Free US Strategy Call
+              <i class="material-icons-outlined text-lg" aria-hidden="true">arrow_forward</i>
+            </a>
+            <a routerLink="/services" class="bb-cta-btn bb-cta-btn-alt">Explore Our Practice Areas</a>
+          </div>
         </div>
       </section>
     </main>
@@ -243,33 +226,26 @@ const OFFERS: Offer[] = [
         font-size: 24px;
       }
 
-      .bb-founder-card {
-        background: #ffffff;
-        border: 1px solid rgba(22, 40, 60, 0.08);
-        border-radius: 12px;
-        padding: 28px 26px 30px;
-        transition:
-          transform 0.2s ease,
-          box-shadow 0.2s ease;
+      .bb-team-photo {
+        margin-inline: auto;
+        overflow: hidden;
+        border-radius: 24px;
       }
-      .bb-founder-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 28px rgba(12, 33, 53, 0.09);
+      .bb-team-photo img {
+        display: block;
+        width: 100%;
+        height: auto;
       }
-      .bb-founder-header {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-      }
-      .bb-founder-photo {
-        width: 84px;
-        height: 84px;
-        flex-shrink: 0;
-        border-radius: 50%;
-        object-fit: cover;
-        object-position: top center;
-        border: 3px solid var(--ivory-soft);
-        box-shadow: 0 2px 8px rgba(12, 33, 53, 0.12);
+
+      .bb-quote {
+        margin: 40px 0 0;
+        padding: 6px 0 6px 22px;
+        border-left: 3px solid var(--saffron);
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 1.25rem;
+        line-height: 1.5;
+        color: var(--ink);
       }
 
       .bb-cta-btn {
@@ -277,13 +253,13 @@ const OFFERS: Offer[] = [
         align-items: center;
         gap: 8px;
         padding: 13px 28px;
-        background: var(--saffron);
-        color: var(--navy-900);
+        background: var(--ink);
+        color: var(--ivory);
         font-family: 'Inter', sans-serif;
         font-size: 15px;
         font-weight: 700;
         letter-spacing: 0.01em;
-        border: 2px solid var(--saffron);
+        border: 2px solid var(--ink);
         border-radius: 8px;
         text-decoration: none;
         transition:
@@ -296,12 +272,22 @@ const OFFERS: Offer[] = [
         color: var(--ink);
         border-color: var(--ivory);
       }
+      .bb-cta-btn-alt {
+        background: transparent;
+        color: #ffffff;
+        border-color: #ffffff;
+      }
+      .bb-cta-btn-alt:hover {
+        background: var(--ivory);
+        color: var(--ink);
+        border-color: var(--ivory);
+      }
     `,
   ],
 })
 export class AboutComponent implements OnInit {
-  readonly offers = OFFERS;
-  readonly founders = FOUNDERS;
+  readonly story = STORY;
+  readonly pillars = PILLARS;
 
   constructor(
     private title: Title,
@@ -313,7 +299,7 @@ export class AboutComponent implements OnInit {
     this.meta.updateTag({
       name: 'description',
       content:
-        'My Bharat Connects was founded by NRIs, for NRIs: a US-based team managing tax, wealth, real estate, and legal matters in India through verified professionals and dedicated relationship managers.',
+        'MyBharatConnects was founded by US-based NRIs who lived these challenges. We operate from the United States, giving NRIs a single trusted platform for managed tax, legal, and real estate services in India.',
     });
   }
 }
