@@ -285,7 +285,7 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
         outline: none;
       }
 
-      /* Desktop-only nav items (About Us / Blog / FAQ / Careers) — same reason
+      /* Desktop-only nav items (About Us / Blog / FAQ / Careers; Services is its own dropdown) — same reason
        * as .bb-nav-hamburger above: .bb-nav-link's own display: inline-flex
        * would otherwise beat Tailwind's "hidden lg:inline". The seven header
        * items only fit side by side from 1024px up; below that they live in
@@ -444,9 +444,6 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
         </a>
       </div>
       <nav class="flex items-center gap-4 lg:gap-6 xl:gap-9 text-base font-semibold" aria-label="Primary">
-        <a routerLink="/blog" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">Blog</a>
-        <a routerLink="/faq" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">FAQ</a>
-        <a routerLink="/careers" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">Careers</a>
         <a routerLink="/about" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">About Us</a>
         <div
           class="hidden lg:block bb-nav-services"
@@ -496,6 +493,9 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
             </div>
           }
         </div>
+        <a routerLink="/blog" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">Blog</a>
+        <a routerLink="/faq" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">FAQ</a>
+        <a routerLink="/careers" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">Careers</a>
         <a routerLink="/auth/login" class="bb-nav-cta">
           Sign In
           <i class="material-icons-outlined text-lg" aria-hidden="true">arrow_forward</i>
@@ -509,6 +509,24 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
 
       @if (mobileMenuOpen) {
         <div id="bb-mobile-menu" class="bb-mobile-menu" role="menu">
+          <a
+            routerLink="/about"
+            class="bb-mobile-menu-link"
+            role="menuitem"
+            (click)="closeMobileMenu()"
+          >
+            <i class="material-icons-outlined" aria-hidden="true">info</i>
+            About Us
+          </a>
+          <a
+            routerLink="/services"
+            class="bb-mobile-menu-link"
+            role="menuitem"
+            (click)="closeMobileMenu()"
+          >
+            <i class="material-icons-outlined" aria-hidden="true">apps</i>
+            Services
+          </a>
           <a
             routerLink="/blog"
             class="bb-mobile-menu-link"
@@ -535,24 +553,6 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
           >
             <i class="material-icons-outlined" aria-hidden="true">work_outline</i>
             Careers
-          </a>
-          <a
-            routerLink="/about"
-            class="bb-mobile-menu-link"
-            role="menuitem"
-            (click)="closeMobileMenu()"
-          >
-            <i class="material-icons-outlined" aria-hidden="true">info</i>
-            About Us
-          </a>
-          <a
-            routerLink="/services"
-            class="bb-mobile-menu-link"
-            role="menuitem"
-            (click)="closeMobileMenu()"
-          >
-            <i class="material-icons-outlined" aria-hidden="true">apps</i>
-            Services
           </a>
           <a
             routerLink="/"

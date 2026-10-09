@@ -3,17 +3,28 @@ import { isPlatformBrowser } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { ToastContainerComponent } from './core/services/toast.service';
 import { ConfirmDialogContainerComponent } from './core/services/confirm-dialog.service';
+import { ConsentService } from './core/services/consent.service';
+import { CookieBannerComponent } from './shared/components/cookie-banner/cookie-banner.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastContainerComponent, ConfirmDialogContainerComponent],
+  imports: [
+    RouterOutlet,
+    ToastContainerComponent,
+    ConfirmDialogContainerComponent,
+    CookieBannerComponent,
+  ],
   templateUrl: './app.html',
 })
 export class App implements OnInit {
   private platformId = inject(PLATFORM_ID);
+  private consent = inject(ConsentService);
 
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
+
+    // Shows the cookie banner on a first visit and applies any saved choice.
+    this.consent.init();
 
     // Item-editing tables (quote/invoice line items) scroll horizontally on
     // mobile (.bb-table-scroll). The browser's native "scroll focused input

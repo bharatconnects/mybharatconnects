@@ -75,7 +75,7 @@ import { FooterComponent } from '../shared/footer.component';
         <h1>Privacy Policy</h1>
         <p class="meta">
           Bharat Connects LLC &nbsp;|&nbsp; Effective Date: July 14, 2026 &nbsp;|&nbsp;
-          <a href="mailto:privacy@mybharatconnects.com">privacy&#64;mybharatconnects.com</a>
+          <a href="mailto:info@mybharatconnects.com">info&#64;mybharatconnects.com</a>
         </p>
 
         <h2>1. Introduction</h2>
@@ -282,7 +282,7 @@ import { FooterComponent } from '../shared/footer.component';
         <p>
           You may opt out of marketing communications at any time via the unsubscribe link in any
           email or by emailing
-          <a href="mailto:privacy@mybharatconnects.com">privacy&#64;mybharatconnects.com</a>.
+          <a href="mailto:info@mybharatconnects.com">info&#64;mybharatconnects.com</a>.
           Transactional communications related to active services cannot be opted out of.
         </p>
         <h3>7.3 California Residents (CCPA/CPRA)</h3>
@@ -291,29 +291,41 @@ import { FooterComponent } from '../shared/footer.component';
           (CCPA) and California Privacy Rights Act (CPRA), including the right to know, delete,
           correct, and opt-out of the sale or sharing of personal information. We do not sell
           personal information. To exercise these rights, contact us at
-          <a href="mailto:privacy@mybharatconnects.com">privacy&#64;mybharatconnects.com</a>.
+          <a href="mailto:info@mybharatconnects.com">info&#64;mybharatconnects.com</a>.
         </p>
         <h3>7.4 Exercising Your Rights</h3>
         <p>
           Please contact us at
-          <a href="mailto:privacy@mybharatconnects.com">privacy&#64;mybharatconnects.com</a>. We
+          <a href="mailto:info@mybharatconnects.com">info&#64;mybharatconnects.com</a>. We
           will respond within a reasonable timeframe as required by applicable law. We may require
           identity verification. We reserve the right to decline requests that are excessive,
           unfounded, or that would infringe on the rights of others.
         </p>
 
-        <h2>8. Cookies and Tracking Technologies</h2>
+        <h2 id="cookies">8. Cookies and Tracking Technologies</h2>
         <p>Our website uses cookies and similar tracking technologies:</p>
         <ul>
           <li>
-            <strong>Essential Cookies:</strong> Required for the website and portal to function
+            <strong>Essential Cookies:</strong> Required for the website and portal to function,
+            including signing in, security, and remembering your cookie choices. These are always
+            on.
           </li>
-          <li><strong>Analytical Cookies:</strong> Help us understand usage (Google Analytics)</li>
-          <li><strong>Marketing Cookies:</strong> Track ad performance and targeted advertising</li>
+          <li>
+            <strong>Analytics Cookies:</strong> Help us understand how the site is used (Google
+            Analytics). Set only if you accept analytics cookies.
+          </li>
+          <li>
+            <strong>Marketing Cookies:</strong> Measure the performance of our advertising and
+            show relevant ads (Google Ads and the Meta pixel for Facebook and Instagram). Set only
+            if you accept marketing cookies.
+          </li>
         </ul>
         <p>
-          You can control cookies through your browser settings. Disabling certain cookies may
-          affect website functionality.
+          When you first visit, a banner asks whether to accept all, reject non-essential cookies,
+          or customize your choices. Analytics and marketing cookies stay off until you opt in. You
+          can change or withdraw your choice at any time using "Cookie settings" in the site
+          footer, and you can also control cookies through your browser settings. Disabling
+          certain cookies may affect website functionality.
         </p>
 
         <h2>9. International Data Transfers</h2>
@@ -375,7 +387,7 @@ import { FooterComponent } from '../shared/footer.component';
         </p>
         <p>
           Bharat Connects LLC &mdash; Privacy Officer<br />
-          Email: <a href="mailto:privacy@mybharatconnects.com">privacy&#64;mybharatconnects.com</a
+          Email: <a href="mailto:info@mybharatconnects.com">info&#64;mybharatconnects.com</a
           ><br />
           Website: www.mybharatconnects.com/privacy<br />
           Address: 4030 Wake Forest Rd Ste 349, Raleigh 27609, NC

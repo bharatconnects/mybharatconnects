@@ -8,9 +8,16 @@ import { ScrollRevealDirective } from '../../shared/directives/scroll-reveal.dir
 interface Faq {
   q: string;
   a: string;
+  /** Optional "Key caveat" note shown under the answer. */
+  caveat?: string;
 }
 
-const FAQS: Faq[] = [
+interface FaqGroup {
+  title: string;
+  faqs: Faq[];
+}
+
+const SERVICE_FAQS: Faq[] = [
   {
     q: 'Who is My Bharat Connects for?',
     a: 'We work with NRIs based in the US who need to manage tax, wealth, real estate, or legal matters in India without being there in person.',
@@ -49,6 +56,42 @@ const FAQS: Faq[] = [
   },
 ];
 
+const NRI_FAQS: Faq[] = [
+  {
+    q: 'What is the TDS rate when an NRI sells property in India?',
+    a: 'Under Section 195, TDS applies to the entire sale consideration, not just your profit. For properties held over 24 months, the base withholding rate is 12.5% (plus applicable surcharge and 4% cess). Properties held for 24 months or less face a 30% base rate plus surcharge and cess.',
+    caveat:
+      'Unlike domestic sales, the buyer cannot simply use their PAN. They must hold an active Tax Deduction Account Number (TAN) and file Form 27Q.',
+  },
+  {
+    q: 'How does a Form 13 Lower TDS Certificate save capital?',
+    a: 'Default withholding takes 12.5%+ of your gross sale value, often tying up funds for over a year while you wait for an income tax refund. By filing Form 13 on the TRACES portal before the sale closes, the tax officer assesses your actual net capital gain, factoring in your cost basis and any Section 54/54EC reinvestments, and issues a certificate directing the buyer to deduct only that lower amount (or 0%).',
+    caveat:
+      "Processing takes 3 to 6 weeks, so file as soon as your Agreement to Sell is executed and the buyer's TAN is available.",
+  },
+  {
+    q: 'What is the annual limit for repatriating property sale proceeds abroad?',
+    a: 'Under FEMA (Remittance of Assets) Regulations, an NRI or PIO can remit up to USD 1,000,000 (one million US dollars) per financial year from their NRO account balances, covering property sales, rental yields, and inherited assets.',
+    caveat:
+      'This USD 1M facility is governed by FEMA remittance rules for non-residents, not the resident Liberalised Remittance Scheme (LRS), which does not apply to NRIs.',
+  },
+  {
+    q: 'When are Form 15CA and Form 15CB required to transfer funds overseas?',
+    a: 'For taxable remittances exceeding ₹5,00,000 in a financial year, a Chartered Accountant must inspect your tax receipts and upload Form 15CB. You then submit Form 15CA (Part C) online linking that certificate. The receiving Indian bank requires both acknowledgments before wiring funds to your overseas account.',
+    caveat:
+      'If the remittance is completely non-taxable or under ₹5,00,000, only specific sections of Form 15CA apply, and a CA-certified Form 15CB is not required.',
+  },
+  {
+    q: 'What is the difference between a Legal Heir Certificate and a Succession Certificate?',
+    a: 'A Legal Heir Certificate is issued by local revenue authorities (e.g., Tahsildar) to identify surviving relatives for municipal transfers and utility connections. A Succession Certificate is issued by a civil court and is legally required to claim movable assets like bank accounts, fixed deposits, shares, and mutual funds of a deceased person who left no will.',
+  },
+];
+
+const FAQ_GROUPS: FaqGroup[] = [
+  { title: 'About MyBharatConnects', faqs: SERVICE_FAQS },
+  { title: 'NRI tax, property and succession', faqs: NRI_FAQS },
+];
+
 @Component({
   selector: 'app-faq',
   standalone: true,
@@ -81,12 +124,23 @@ const FAQS: Faq[] = [
       </section>
 
       <section class="px-6 sm:px-8 lg:px-12 pb-16 sm:pb-20" style="background: var(--ivory)">
-        <div class="max-w-3xl mx-auto flex flex-col gap-3">
-          @for (f of faqs; track f.q; let i = $index) {
-            <details class="bb-faq-item" appReveal [revealDelay]="i * 40">
-              <summary class="bb-faq-q">{{ f.q }}</summary>
-              <p class="bb-faq-a">{{ f.a }}</p>
-            </details>
+        <div class="max-w-3xl mx-auto flex flex-col gap-10">
+          @for (g of groups; track g.title) {
+            <div class="flex flex-col gap-3">
+              <h2 class="bb-faq-group">{{ g.title }}</h2>
+              @for (f of g.faqs; track f.q; let i = $index) {
+                <details class="bb-faq-item" appReveal [revealDelay]="i * 40">
+                  <summary class="bb-faq-q">{{ f.q }}</summary>
+                  <p class="bb-faq-a">{{ f.a }}</p>
+                  @if (f.caveat) {
+                    <p class="bb-faq-caveat">
+                      <strong>Key caveat:</strong>
+                      {{ f.caveat }}
+                    </p>
+                  }
+                </details>
+              }
+            </div>
           }
         </div>
       </section>
@@ -111,6 +165,27 @@ const FAQS: Faq[] = [
   `,
   styles: [
     `
+      .bb-faq-group {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: 1.5rem;
+        line-height: 1.25;
+        color: var(--ink);
+        margin: 0 0 4px;
+      }
+      .bb-faq-caveat {
+        margin: 0 24px 22px;
+        padding: 12px 16px;
+        border-left: 3px solid var(--saffron);
+        border-radius: 0 8px 8px 0;
+        background: var(--ivory-soft);
+        font-size: 15px;
+        line-height: 1.65;
+        color: rgba(22, 40, 60, 0.8);
+      }
+      .bb-faq-caveat strong {
+        color: var(--ink);
+      }
       .bb-faq-item {
         background: #ffffff;
         border: 1px solid rgba(22, 40, 60, 0.08);
@@ -188,7 +263,7 @@ const FAQS: Faq[] = [
   ],
 })
 export class FaqComponent implements OnInit {
-  readonly faqs = FAQS;
+  readonly groups = FAQ_GROUPS;
 
   constructor(
     private title: Title,

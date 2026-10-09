@@ -16,4 +16,12 @@ export const environment = {
   // mybharatconnects.com only; RecaptchaService no-ops when this is unset
   // rather than generating a token that would fail Google's domain check.
   recaptchaSiteKey: '',
+  // Marketing/analytics tag IDs, all PUBLIC. Leave empty to disable a tag; each only
+  // loads after the visitor consents in the cookie banner (core/services/consent.service.ts).
+  // GA4 measurement ID, e.g. "G-XXXXXXXXXX".
+  googleAnalyticsId: '',
+  // Google Ads conversion ID, e.g. "AW-XXXXXXXXX".
+  googleAdsId: '',
+  // Meta (Facebook) Pixel ID.
+  metaPixelId: '',
 };

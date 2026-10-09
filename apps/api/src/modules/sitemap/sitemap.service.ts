@@ -18,7 +18,11 @@ const STATIC_PATHS: { path: string; changefreq: string; priority: string }[] = [
   { path: '/about', changefreq: 'monthly', priority: '0.8' },
   { path: '/faq', changefreq: 'monthly', priority: '0.6' },
   { path: '/careers', changefreq: 'monthly', priority: '0.4' },
-  { path: '/blog', changefreq: 'monthly', priority: '0.5' },
+  { path: '/blog', changefreq: 'weekly', priority: '0.6' },
+  { path: '/blog/nri-property-sale-tds-form-13-section-195', changefreq: 'monthly', priority: '0.6' },
+  { path: '/blog/remote-nri-property-management-india-guide', changefreq: 'monthly', priority: '0.6' },
+  { path: '/blog/inheriting-property-india-succession-legal-heir-guide', changefreq: 'monthly', priority: '0.6' },
+  { path: '/blog/nri-wealth-management-nre-nro-gift-city-guide', changefreq: 'monthly', priority: '0.6' },
 ];
 
 const CACHE_TTL_MS = 5 * 60 * 1000;

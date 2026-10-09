@@ -17,13 +17,13 @@ const RESEND_COOLDOWN_SECONDS = 30;
     <main class="h-screen overflow-hidden grid lg:grid-cols-2 bg-base-100">
       <!-- ── Brand panel (desktop only — mobile gets a compact back-to-home link instead) ── -->
       <aside
-        class="hidden lg:flex lg:flex-col lg:justify-between lg:p-12 lg:h-screen bg-neutral text-neutral-content"
+        class="hidden lg:flex lg:flex-col lg:px-12 lg:pt-14 lg:pb-12 lg:h-screen bg-neutral text-neutral-content"
       >
-        <a routerLink="/" class="inline-flex items-center" aria-label="MyBharatConnects home">
+        <a routerLink="/" class="inline-flex items-center h-9" aria-label="MyBharatConnects home">
           <app-brand-logo variant="lockup" [size]="38" [onDark]="true"></app-brand-logo>
         </a>
 
-        <div class="hidden lg:block max-w-md">
+        <div class="hidden lg:block max-w-md mt-8">
           <p class="font-mono text-[13px] tracking-widest text-accent mb-4">
             THE TRUSTED NRI CROSS-BORDER PLATFORM
           </p>
@@ -56,7 +56,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
           </ul>
         </div>
 
-        <p class="hidden lg:block text-xs opacity-50">
+        <p class="hidden lg:block text-xs opacity-50 mt-auto pt-8">
           © 2026 MyBharatConnects. All rights reserved.
         </p>
       </aside>

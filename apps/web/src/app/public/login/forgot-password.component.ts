@@ -14,13 +14,13 @@ import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-log
     <main class="h-screen overflow-hidden grid lg:grid-cols-2 bg-base-100">
       <!-- ── Brand panel (desktop only — mobile gets a compact back-to-home link instead) ── -->
       <aside
-        class="hidden lg:flex lg:flex-col lg:justify-between lg:p-12 lg:h-screen bg-neutral text-neutral-content"
+        class="hidden lg:flex lg:flex-col lg:px-12 lg:pt-14 lg:pb-12 lg:h-screen bg-neutral text-neutral-content"
       >
-        <a routerLink="/" class="inline-flex items-center" aria-label="MyBharatConnects home">
+        <a routerLink="/" class="inline-flex items-center h-9" aria-label="MyBharatConnects home">
           <app-brand-logo variant="lockup" [size]="38" [onDark]="true"></app-brand-logo>
         </a>
 
-        <div class="hidden lg:block max-w-md">
+        <div class="hidden lg:block max-w-md mt-8">
           <p class="font-mono text-[13px] tracking-widest text-accent mb-4">
             THE TRUSTED NRI CROSS-BORDER PLATFORM
           </p>
@@ -53,7 +53,7 @@ import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-log
           </ul>
         </div>
 
-        <p class="hidden lg:block text-xs opacity-50">
+        <p class="hidden lg:block text-xs opacity-50 mt-auto pt-8">
           © 2026 MyBharatConnects. All rights reserved.
         </p>
       </aside>
@@ -70,7 +70,7 @@ import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-log
 
       <!-- ── Form panel (right on desktop, below on mobile) ── -->
       <section
-        class="flex flex-col justify-center px-6 sm:px-12 lg:px-16 pt-16 sm:pt-10 lg:pt-14 pb-6 sm:pb-8 lg:pb-10 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none overflow-y-auto scrollbar-none"
+        class="flex flex-col justify-start px-6 sm:px-12 lg:px-16 pt-16 sm:pt-10 lg:pt-14 pb-6 sm:pb-8 lg:pb-10 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none overflow-y-auto scrollbar-none"
       >
         <div class="w-full max-w-lg mx-auto lg:mx-0">
           <div class="hidden lg:flex items-center justify-between mb-8 gap-4">

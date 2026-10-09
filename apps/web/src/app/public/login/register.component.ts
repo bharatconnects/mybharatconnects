@@ -29,13 +29,13 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
     <main class="h-screen overflow-hidden grid lg:grid-cols-2 bg-base-100">
       <!-- ── Brand panel (desktop only — mobile gets a compact back-to-home link instead) ── -->
       <aside
-        class="hidden lg:flex lg:flex-col lg:justify-between lg:p-12 bg-neutral text-neutral-content overflow-y-auto"
+        class="hidden lg:flex lg:flex-col lg:px-12 lg:pt-14 lg:pb-12 bg-neutral text-neutral-content overflow-y-auto"
       >
-        <a routerLink="/" class="inline-flex items-center" aria-label="MyBharatConnects home">
+        <a routerLink="/" class="inline-flex items-center h-9" aria-label="MyBharatConnects home">
           <app-brand-logo variant="lockup" [size]="38" [onDark]="true"></app-brand-logo>
         </a>
 
-        <div class="hidden lg:block max-w-md">
+        <div class="hidden lg:block max-w-md mt-8">
           <p class="font-mono text-[13px] tracking-widest text-accent mb-3">CREATE YOUR ACCOUNT</p>
           <h2 class="font-serif text-4xl xl:text-5xl font-light leading-[1.1] mb-5 text-balance">
             Set up your secure portal in
@@ -75,7 +75,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
           </ul>
         </div>
 
-        <p class="hidden lg:block text-xs opacity-50">
+        <p class="hidden lg:block text-xs opacity-50 mt-auto pt-8">
           © 2026 MyBharatConnects. All rights reserved.
         </p>
       </aside>
@@ -92,10 +92,10 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 
       <!-- ── Form panel ── -->
       <section
-        class="flex flex-col justify-start lg:justify-center px-6 sm:px-12 lg:px-16 pt-16 sm:pt-8 lg:pt-10 pb-6 sm:pb-8 lg:pb-10 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none overflow-y-auto scrollbar-none"
+        class="flex flex-col justify-start px-6 sm:px-12 lg:px-16 pt-16 sm:pt-8 lg:pt-14 pb-6 sm:pb-8 lg:pb-10 max-w-2xl w-full mx-auto lg:mx-0 lg:max-w-none overflow-y-auto scrollbar-none"
       >
         <div class="w-full max-w-lg sm:max-w-2xl lg:max-w-lg mx-auto lg:mx-0">
-          <div class="flex items-center justify-between mb-3 sm:mb-6 gap-4">
+          <div class="flex items-center justify-between mb-3 sm:mb-6 lg:mb-8 gap-4">
             <a
               routerLink="/"
               class="hidden lg:inline-flex bb-btn bb-btn-ghost bb-btn-sm shrink-0"

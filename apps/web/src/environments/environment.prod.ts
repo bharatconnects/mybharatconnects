@@ -13,4 +13,12 @@ export const environment = {
   // from any other origin fails Google's own domain check, which is why
   // this is only set here and not in environment.ts/environment.dev.ts.
   recaptchaSiteKey: '6LfU6pctAAAAACyYUI4hW0ICGY34uUz_5dvpdJRR',
+  // Marketing/analytics tag IDs, all PUBLIC. Leave empty to disable a tag; each only
+  // loads after the visitor consents in the cookie banner (core/services/consent.service.ts).
+  // GA4 measurement ID, e.g. "G-XXXXXXXXXX".
+  googleAnalyticsId: '',
+  // Google Ads conversion ID, e.g. "AW-XXXXXXXXX".
+  googleAdsId: '',
+  // Meta (Facebook) Pixel ID.
+  metaPixelId: '',
 };

@@ -41,8 +41,11 @@ export const routes: Routes = [
   },
   {
     path: 'blog',
-    loadComponent: () =>
-      import('./public/blog/blog-coming-soon.component').then((m) => m.BlogComingSoonComponent),
+    loadComponent: () => import('./public/blog/blog-list.component').then((m) => m.BlogListComponent),
+  },
+  {
+    path: 'blog/:slug',
+    loadComponent: () => import('./public/blog/blog-post.component').then((m) => m.BlogPostComponent),
   },
   {
     path: 'about',

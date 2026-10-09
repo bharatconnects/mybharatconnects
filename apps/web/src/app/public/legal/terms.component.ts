@@ -77,7 +77,7 @@ import { FooterComponent } from '../shared/footer.component';
         <h1>Terms &amp; Conditions</h1>
         <p class="meta">
           Bharat Connects LLC &nbsp;|&nbsp; Effective Date: July 14, 2026 &nbsp;|&nbsp;
-          <a href="mailto:legal@mybharatconnects.com">legal&#64;mybharatconnects.com</a>
+          <a href="mailto:info@mybharatconnects.com">info&#64;mybharatconnects.com</a>
         </p>
         <h2>1. Definitions</h2>
         <p>In these Terms and Conditions:</p>
@@ -198,7 +198,7 @@ import { FooterComponent } from '../shared/footer.component';
           signatures under the U.S. Electronic Signatures in Global and National Commerce Act
           (E-SIGN), the Uniform Electronic Transactions Act (UETA), and any equivalent applicable
           law. You may withdraw this consent by discontinuing use of our services and notifying us
-          in writing at legal&#64;mybharatconnects.com.
+          in writing at info&#64;mybharatconnects.com.
         </p>
 
         <h2>4. Services Offered</h2>
@@ -479,7 +479,7 @@ import { FooterComponent } from '../shared/footer.component';
         <h3>11.1 Informal Resolution (Mandatory)</h3>
         <p>
           Before initiating any formal proceeding, you agree to contact Bharat Connects LLC in
-          writing at legal&#64;mybharatconnects.com and provide a detailed description of the
+          writing at info&#64;mybharatconnects.com and provide a detailed description of the
           dispute, and to allow thirty (30) days for good-faith informal resolution. This informal
           resolution period is a mandatory precondition to any arbitration or court proceeding.
         </p>
@@ -582,7 +582,7 @@ import { FooterComponent } from '../shared/footer.component';
         <h2>17. Contact Information</h2>
         <p>
           Bharat Connects LLC &mdash; Legal Department<br />
-          Email: <a href="mailto:legal@mybharatconnects.com">legal&#64;mybharatconnects.com</a
+          Email: <a href="mailto:info@mybharatconnects.com">info&#64;mybharatconnects.com</a
           ><br />
           Website: www.mybharatconnects.com/terms<br />
           Address: 4030 Wake Forest Rd Ste 349, Raleigh 27609, NC
