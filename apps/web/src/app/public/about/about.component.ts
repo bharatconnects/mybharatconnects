@@ -84,6 +84,18 @@ const PILLARS: Pillar[] = [
         </div>
       </section>
 
+      <!-- Office photo -->
+      <section class="px-6 sm:px-8 lg:px-12 pb-2" style="background: var(--ivory)">
+        <figure appReveal class="bb-team-photo max-w-3xl mx-auto">
+          <img
+            src="/about-office.jpg"
+            width="1408"
+            height="768"
+            alt="A family meeting with advisors in a bright India office, reviewing a financial plan together"
+          />
+        </figure>
+      </section>
+
       <!-- Story -->
       <section class="px-6 sm:px-8 lg:px-12 py-12 sm:py-16" style="background: var(--ivory)">
         <div class="max-w-3xl mx-auto flex flex-col gap-10">
