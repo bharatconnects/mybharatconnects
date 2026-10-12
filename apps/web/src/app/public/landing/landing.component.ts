@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Title, Meta } from '@angular/platform-browser';
+import { Meta } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { RecaptchaService } from '../../core/services/recaptcha.service';
+import { SeoService } from '../../core/services/seo.service';
 import { NavbarComponent } from '../shared/navbar.component';
 import { FooterComponent } from '../shared/footer.component';
 import { PhoneInputComponent } from '../../shared/components/phone-input/phone-input.component';
@@ -1876,21 +1877,20 @@ export class LandingComponent implements OnInit {
   testimonials: PublicTestimonial[] = [];
 
   constructor(
-    private title: Title,
     private meta: Meta,
     private http: HttpClient,
     private recaptcha: RecaptchaService,
+    private seo: SeoService,
   ) {}
 
   ngOnInit(): void {
-    const pageTitle =
-      'MyBharatConnects | NRI Services Platform | Tax, Wealth, Real Estate & Legal';
+    const pageTitle = 'MyBharatConnects | Trusted NRI Services in India';
     const description =
-      'End-to-end services for NRIs across four verticals: tax & compliance, wealth management, real estate, and legal documentation. Trusted by 100+ NRI clients.';
-    const ogImage = '/og-image.png';
+      'MyBharatConnects helps NRIs in the USA access services in India for Taxation, Wealth Management, Real Estate, and Legal documentation. Built by NRIs, designed for NRIs.';
+    const ogImage = `${environment.siteUrl}/og-image.png`;
 
-    this.title.setTitle(pageTitle);
-    this.meta.updateTag({ name: 'description', content: description });
+    // Title, description, canonical, og:url and the matching og/twitter tags.
+    this.seo.setPageSeo({ title: pageTitle, description, canonicalPath: '/', ogImage });
     this.meta.updateTag({
       name: 'keywords',
       content:
