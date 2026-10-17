@@ -9,6 +9,23 @@ interface EmailMessage {
   to: string;
   subject: string;
   html: string;
+  /** Optional Reply-To, so a reply to an internal alert goes to the person it is about. */
+  replyTo?: string;
+}
+
+/** The fields of a new lead that are shown in the internal alert email. */
+export interface NewLeadAlert {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  country?: string;
+  serviceType?: string;
+  preferredCity?: string;
+  timezone?: string;
+  intentTag?: string;
+  source?: string;
+  message?: string;
 }
 
 @Injectable()
@@ -96,6 +113,7 @@ export class EmailService {
         new SendEmailCommand({
           FromEmailAddress: this.fromAddress,
           Destination: { ToAddresses: [actualTo] },
+          ...(msg.replyTo ? { ReplyToAddresses: [msg.replyTo] } : {}),
           Content: {
             Simple: {
               Subject: { Data: msg.subject, Charset: 'UTF-8' },
@@ -110,7 +128,7 @@ export class EmailService {
     }
   }
 
-  private wrap(body: string): string {
+  private wrap(body: string, replyable = false): string {
     const year = new Date().getFullYear();
     return `<!DOCTYPE html>
 <html lang="en">
@@ -148,7 +166,7 @@ export class EmailService {
               </p>
               <p style="margin:0;color:#9ca3af;font-size:11px;">
                 &copy; ${year} MyBharatConnects. All rights reserved.<br/>
-                This is an automated message. Please do not reply to this email.
+                ${replyable ? 'This is an internal alert.' : 'This is an automated message. Please do not reply to this email.'}
               </p>
             </td>
           </tr>
@@ -158,6 +176,16 @@ export class EmailService {
   </table>
 </body>
 </html>`;
+  }
+
+  /** Lead-form values are user-supplied, so escape them before putting them in HTML. */
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   private greeting(name: string): string {
@@ -834,4 +862,61 @@ export class EmailService {
     });
   }
 
+  /**
+   * Internal alert sent to the team inbox whenever a new query (lead) comes in,
+   * so it is noticed without anyone having to open the Leads page. The
+   * recipient is LEAD_NOTIFICATION_EMAIL (default info@mybharatconnects.com).
+   * Reply-To is the lead, so replying answers them directly.
+   */
+  async sendNewLeadAlertEmail(lead: NewLeadAlert): Promise<void> {
+    const to =
+      this.config.get<string>('LEAD_NOTIFICATION_EMAIL') ??
+      'info@mybharatconnects.com';
+    const e = (v?: string) => (v ? this.escapeHtml(v) : '');
+    const row = (label: string, value?: string, first = false) =>
+      value
+        ? `<tr>
+            <td style="color:#6b7280;font-size:13px;${first ? '' : 'padding-top:8px;'}vertical-align:top;">${label}</td>
+            <td style="color:#0f1a2e;font-weight:600;font-size:13px;text-align:right;${first ? '' : 'padding-top:8px;'}">${value}</td>
+          </tr>`
+        : '';
+    const subjectService = lead.serviceType ? ` (${lead.serviceType})` : '';
+    const subject = `New query: ${lead.name}${subjectService}`
+      .replace(/[\r\n]+/g, ' ')
+      .slice(0, 200);
+
+    await this.send({
+      to,
+      replyTo: lead.email,
+      subject,
+      html: this.wrap(`
+        <p style="margin:0 0 16px;font-size:16px;font-weight:600;color:#0f1a2e;">New query received</p>
+        <p style="margin:0 0 20px;color:#374151;">
+          Someone just submitted a query. Please reach out as soon as you can.
+        </p>
+        <table cellpadding="0" cellspacing="0" role="presentation"
+               style="background:#faf6ed;border:1px solid #ddd5c5;border-radius:6px;padding:16px 20px;margin:0 0 24px;width:100%;">
+          ${row('Name', e(lead.name), true)}
+          ${row('Email', e(lead.email))}
+          ${row('Phone', e(lead.phone))}
+          ${row('Country', e(lead.country))}
+          ${row('Service', e(lead.serviceType))}
+          ${row('City', e(lead.preferredCity))}
+          ${row('Time zone', e(lead.timezone))}
+          ${row('Urgency', e(lead.intentTag))}
+          ${row('Source', e(lead.source))}
+        </table>
+        ${
+          lead.message
+            ? `<p style="margin:0 0 6px;color:#6b7280;font-size:13px;">Message</p>
+        <p style="margin:0 0 24px;color:#374151;white-space:pre-wrap;">${e(lead.message)}</p>`
+            : ''
+        }
+        ${this.button('Open Leads', `${this.frontendUrl}/case-manager/leads`)}
+        <p style="margin:0;color:#6b7280;font-size:13px;">
+          Reply to this email to write to ${e(lead.name)} directly. Lead ID: ${e(lead.id)}.
+        </p>
+      `, true),
+    });
+  }
 }

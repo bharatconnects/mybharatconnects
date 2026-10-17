@@ -55,6 +55,11 @@ export class LeadsService {
       clientId: clientId ? new Types.ObjectId(clientId) : undefined,
     });
     const saved = await lead.save();
+
+    // Alert the team first and independently, so a failed client
+    // acknowledgement can never stop the team hearing about the query.
+    await this.notifyTeamOfNewLead(saved);
+
     try {
       await this.emailService.sendLeadAcknowledgementEmail(
         saved.email,
@@ -65,6 +70,46 @@ export class LeadsService {
       this.logger.error(`Lead acknowledgement email failed for ${saved.email}: ${msg}`);
     }
     return saved;
+  }
+
+  // Emails the team inbox about a new query. Awaited (not fire-and-forget)
+  // because the API runs as a serverless function that can be frozen as soon
+  // as the response is sent. One retry covers a transient SES error; if both
+  // attempts fail the lead is still saved, the failure is logged with the
+  // lead id, and `teamNotifiedAt` stays unset so un-notified leads can be found.
+  private async notifyTeamOfNewLead(lead: LeadDocument): Promise<void> {
+    const leadId = (lead._id as Types.ObjectId).toString();
+    const alert = {
+      id: leadId,
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      country: lead.country,
+      serviceType: lead.serviceType,
+      preferredCity: lead.preferredCity,
+      timezone: lead.timezone,
+      intentTag: lead.intentTag,
+      source: lead.source,
+      message: lead.message,
+    };
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        await this.emailService.sendNewLeadAlertEmail(alert);
+        await this.leadModel
+          .updateOne({ _id: lead._id }, { $set: { teamNotifiedAt: new Date() } })
+          .exec();
+        return;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'unknown error';
+        this.logger.error(
+          `New-lead team alert failed for lead ${leadId} (attempt ${attempt}/2): ${msg}`,
+        );
+        if (attempt === 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
+    }
   }
 
   async findMineForClient(clientId: string): Promise<LeadDocument[]> {

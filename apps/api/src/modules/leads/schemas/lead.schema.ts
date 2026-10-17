@@ -118,6 +118,11 @@ export class Lead {
   @Prop({ type: Types.ObjectId, ref: 'Case' })
   caseId: Types.ObjectId;
 
+  // Set once the internal "new query" alert email to the team inbox has been
+  // sent. Left unset when delivery failed, so un-notified leads can be found.
+  @Prop({ type: Date })
+  teamNotifiedAt?: Date;
+
   @Prop({ type: String })
   timezone?: string;
 

@@ -3,6 +3,10 @@ import { bearer, createTestApp, getTokens, seedUser, TestAppContext } from '../s
 import { Role } from '../../src/common/enums/roles.enum';
 import { Cluster } from '../../src/common/enums/cluster.enum';
 import { UsersService } from '../../src/modules/users/users.service';
+import { EmailService } from '../../src/modules/notifications/notifications.email.service';
+import { getModelToken } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Lead, LeadDocument } from '../../src/modules/leads/schemas/lead.schema';
 
 describe('Leads role matrix (e2e)', () => {
   let ctx: TestAppContext;
@@ -55,6 +59,88 @@ describe('Leads role matrix (e2e)', () => {
       const lead = createRes.body?.data ?? createRes.body;
       expect(lead.cluster).toBe(Cluster.PROPERTY);
       expect(lead.serviceType).toBe('PROPERTY_MANAGEMENT');
+    });
+  });
+
+  describe('POST /api/leads → team alert email', () => {
+    const body = () => ({
+      name: 'Alert Test',
+      email: `lead-alert-${Date.now()}-${Math.random().toString(36).slice(2)}@test.local`,
+      phone: '+15551234567',
+      country: 'US',
+      serviceType: 'PROPERTY_MANAGEMENT',
+      message: 'Need help with my flat <b>in Pune</b>',
+    });
+
+    afterEach(() => jest.restoreAllMocks());
+
+    // API ids are encoded in responses, so look the lead up by its unique email.
+    const storedLead = (email: string) =>
+      ctx.app.get<Model<LeadDocument>>(getModelToken(Lead.name)).findOne({ email }).exec();
+
+    it('emails the team inbox about the new query and marks the lead as notified', async () => {
+      const email = ctx.app.get(EmailService);
+      const alertSpy = jest.spyOn(email, 'sendNewLeadAlertEmail');
+      const payload = body();
+
+      const res = await request(ctx.app.getHttpServer())
+        .post('/api/leads')
+        .send(payload)
+        .expect(201);
+
+      expect(res.body?.data ?? res.body).toBeDefined();
+      const stored = await storedLead(payload.email);
+      expect(alertSpy).toHaveBeenCalledTimes(1);
+      expect(alertSpy.mock.calls[0][0]).toMatchObject({
+        id: String(stored!._id),
+        name: payload.name,
+        email: payload.email,
+        serviceType: 'PROPERTY_MANAGEMENT',
+      });
+
+      expect(stored!.teamNotifiedAt).toBeInstanceOf(Date);
+    });
+
+    it('still saves the lead and sends the client acknowledgement when the team alert fails', async () => {
+      const email = ctx.app.get(EmailService);
+      const alertSpy = jest
+        .spyOn(email, 'sendNewLeadAlertEmail')
+        .mockRejectedValue(new Error('SES unavailable'));
+      const ackSpy = jest.spyOn(email, 'sendLeadAcknowledgementEmail');
+      const payload = body();
+
+      const res = await request(ctx.app.getHttpServer())
+        .post('/api/leads')
+        .send(payload)
+        .expect(201);
+
+      expect(res.body?.data ?? res.body).toBeDefined();
+      // One attempt plus one retry.
+      expect(alertSpy).toHaveBeenCalledTimes(2);
+      expect(ackSpy).toHaveBeenCalledTimes(1);
+
+      const stored = await storedLead(payload.email);
+      expect(stored).not.toBeNull();
+      expect(stored!.teamNotifiedAt).toBeUndefined();
+    });
+
+    it('escapes user-supplied HTML in the alert email', async () => {
+      const email = ctx.app.get(EmailService);
+      const sendSpy = jest
+        .spyOn(email as unknown as { send: (m: { html: string }) => Promise<void> }, 'send')
+        .mockResolvedValue(undefined);
+
+      await email.sendNewLeadAlertEmail({
+        id: 'abc123',
+        name: '<script>alert(1)</script>',
+        email: 'x@test.local',
+        message: '<img src=x onerror=alert(1)>',
+      });
+
+      const html = sendSpy.mock.calls[0][0].html;
+      expect(html).not.toContain('<script>alert(1)</script>');
+      expect(html).not.toContain('<img src=x');
+      expect(html).toContain('&lt;script&gt;');
     });
   });
 
