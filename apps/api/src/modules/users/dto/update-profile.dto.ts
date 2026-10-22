@@ -7,6 +7,7 @@ import {
 } from 'class-validator';
 import { IsEnum } from 'class-validator';
 import { UserPresence } from '../schemas/user.schema';
+import { IsPhone } from '../../../common/validators/is-phone.validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -16,7 +17,7 @@ export class UpdateProfileDto {
   name?: string;
 
   @IsOptional()
-  @IsString()
+  @IsPhone()
   @MaxLength(32)
   phone?: string;
 

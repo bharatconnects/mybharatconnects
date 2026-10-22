@@ -15,6 +15,7 @@ import { QuotesModule } from './modules/quotes/quotes.module';
 import { CasesModule } from './modules/cases/cases.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CrosssellModule } from './modules/crosssell/crosssell.module';
 import { QaModule } from './modules/qa/qa.module';
@@ -74,6 +75,7 @@ import { MongoThrottlerStorage } from './common/throttler/mongo-throttler-storag
     CasesModule,
     DocumentsModule,
     PaymentsModule,
+    SettingsModule,
     NotificationsModule,
     CrosssellModule,
     QaModule,

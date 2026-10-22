@@ -62,6 +62,37 @@ describe('Leads role matrix (e2e)', () => {
     });
   });
 
+  describe('POST /api/leads → phone validation', () => {
+    const post = (phone?: string) =>
+      request(ctx.app.getHttpServer())
+        .post('/api/leads')
+        .send({
+          name: 'Phone Validation Test',
+          email: `lead-phone-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@test.local`,
+          ...(phone === undefined ? {} : { phone }),
+        });
+
+    it.each(['abc', 'call me', '12345', '+1 555 CALL NOW', '++15551234567', '1234567890123456'])(
+      'rejects %j with 400',
+      async (phone) => {
+        const res = await post(phone).expect(400);
+        expect(JSON.stringify(res.body)).toMatch(/phone/i);
+      },
+    );
+
+    it.each(['+91 98765 43210', '+1 (415) 555-0100', '9876543210', '+44.20.7946.0958'])(
+      'accepts %j',
+      async (phone) => {
+        await post(phone).expect(201);
+      },
+    );
+
+    it('still accepts a missing or empty phone (the field is optional)', async () => {
+      await post().expect(201);
+      await post('').expect(201);
+    });
+  });
+
   describe('POST /api/leads → team alert email', () => {
     const body = () => ({
       name: 'Alert Test',

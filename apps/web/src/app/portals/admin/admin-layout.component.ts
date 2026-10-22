@@ -72,6 +72,7 @@ export class AdminLayoutComponent {
       icon: 'analytics',
       allowedRoles: [Role.ADMIN, Role.CASE_MANAGER],
     },
+    { path: 'settings', label: 'Settings', icon: 'tune', allowedRoles: [Role.ADMIN] },
     { path: 'profile', label: 'My Profile', icon: 'manage_accounts' },
   ];
 }

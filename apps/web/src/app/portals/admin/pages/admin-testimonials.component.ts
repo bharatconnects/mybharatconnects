@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageTitleService } from '../../../core/services/page-title.service';
+import { extractApiError } from '../../../core/services/api-error';
 import { DateSortOrder, sortByDate } from '../../../shared/utils/sort-by-date.util';
 import { BbSelectComponent } from '../../../shared/components/bb-select/bb-select.component';
 
@@ -25,8 +26,18 @@ interface Testimonial {
   deleting?: boolean;
 }
 
+interface ShareChoices {
+  name: boolean;
+  location: boolean;
+  service: boolean;
+  publish: boolean;
+}
+
 interface RatingRow {
   _id: string;
+  /** What the customer entered and agreed to share. Absent on feedback from before sharing choices existed. */
+  reviewer?: { displayName?: string; location?: string; serviceLabel?: string };
+  shareConsent?: ShareChoices | null;
   clientId: string | { name?: string; email?: string };
   rating: number;
   comment?: string;
@@ -193,8 +204,30 @@ interface RatingRow {
                       <p class="text-sm text-base-content/40 italic m-0 mt-1">No comment left</p>
                     }
 
+                    @if (r.shareConsent; as c) {
+                      <div class="flex flex-wrap items-center gap-1.5 mt-2 text-xs">
+                        <span class="text-base-content/60">Customer agreed to share:</span>
+                        <span class="bb-chip" [ngClass]="c.name ? 'bb-chip-success' : 'bb-chip-neutral'">Name</span>
+                        <span class="bb-chip" [ngClass]="c.location ? 'bb-chip-success' : 'bb-chip-neutral'">Location</span>
+                        <span class="bb-chip" [ngClass]="c.service ? 'bb-chip-success' : 'bb-chip-neutral'">Service</span>
+                        <span class="bb-chip" [ngClass]="c.publish ? 'bb-chip-success' : 'bb-chip-danger'">{{
+                          c.publish ? 'Comment can be featured' : 'Not for the website'
+                        }}</span>
+                      </div>
+                    }
+
                     @if (r.showFeatureForm) {
                       <div class="flex flex-col gap-3 mt-3 pt-3 border-t border-base-200">
+                        @if (r.shareConsent && !r.shareConsent.publish) {
+                          <p class="text-sm text-error m-0" role="alert">
+                            This customer has not agreed to have their feedback shown on the website, so it cannot be
+                            published.
+                          </p>
+                        } @else if (r.shareConsent) {
+                          <p class="text-xs text-base-content/60 m-0">
+                            Only the details the customer agreed to share are kept. Anything else you type is dropped.
+                          </p>
+                        }
                         <div>
                           <label class="bb-label" [for]="'feat-name-' + r._id">Display name</label>
                           <input
@@ -202,6 +235,7 @@ interface RatingRow {
                             class="bb-input"
                             [(ngModel)]="r.featureName"
                             [ngModelOptions]="{ standalone: true }"
+                            [disabled]="!!r.shareConsent && !r.shareConsent.name"
                           />
                         </div>
                         <div>
@@ -217,6 +251,7 @@ interface RatingRow {
                             [(ngModel)]="r.featureCountry"
                             [ngModelOptions]="{ standalone: true }"
                             placeholder="e.g. New York, USA"
+                            [disabled]="!!r.shareConsent && !r.shareConsent.location"
                           />
                         </div>
                         <div>
@@ -242,7 +277,10 @@ interface RatingRow {
                             class="bb-btn bb-btn-primary bb-btn-sm"
                             (click)="publishTestimonial(r)"
                             [disabled]="
-                              r.publishing || !r.featureContent?.trim() || !r.featureName?.trim()
+                              r.publishing ||
+                              !r.featureContent?.trim() ||
+                              !r.featureName?.trim() ||
+                              (!!r.shareConsent && !r.shareConsent.publish)
                             "
                           >
                             @if (r.publishing) {
@@ -495,9 +533,14 @@ export class AdminTestimonialsComponent implements OnInit {
 
   openFeatureForm(r: RatingRow): void {
     r.showFeatureForm = true;
-    r.featureName = this.getRatingClientName(r);
+    const consent = r.shareConsent;
+    // Start from what the customer entered, and only where they agreed.
+    r.featureName =
+      consent && !consent.name
+        ? 'A MyBharatConnects client'
+        : r.reviewer?.displayName || this.getRatingClientName(r);
     r.featureContent = r.comment || '';
-    r.featureCountry = '';
+    r.featureCountry = !consent || consent.location ? (r.reviewer?.location ?? '') : '';
   }
 
   publishTestimonial(r: RatingRow): void {
@@ -507,6 +550,7 @@ export class AdminTestimonialsComponent implements OnInit {
       .post<Testimonial>(`/feedback/testimonials/${r._id}/publish`, {
         clientName: r.featureName,
         clientCountry: r.featureCountry || undefined,
+        serviceType: !r.shareConsent || r.shareConsent.service ? r.reviewer?.serviceLabel || undefined : undefined,
         content: r.featureContent,
       })
       .subscribe({
@@ -517,9 +561,9 @@ export class AdminTestimonialsComponent implements OnInit {
           this.published = sortByDate([...this.published, { ...data, approving: false }], this.sortOrder);
           this.toast.success('Testimonial published');
         },
-        error: () => {
+        error: (err: unknown) => {
           r.publishing = false;
-          this.toast.error('Failed to publish testimonial');
+          this.toast.error(extractApiError(err, 'Failed to publish testimonial').message);
         },
       });
   }

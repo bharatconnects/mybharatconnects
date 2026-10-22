@@ -82,6 +82,7 @@ export class LeadsController {
     @Query('assignedCaseManager') assignedCaseManager?: string,
     @Query('serviceType') serviceType?: ServiceType,
     @Query('cluster') cluster?: Cluster,
+    @Query('includeConverted') includeConverted?: string,
   ) {
     const filters: LeadFilters = {};
     if (status) filters.status = status;
@@ -91,6 +92,11 @@ export class LeadsController {
     // Leads a CM has hidden drop out of their own list; ADMIN always sees
     // everything (including who hid what).
     if (user.role === Role.CASE_MANAGER) filters.excludeHidden = true;
+    // Once a case reaches Case Open it leaves the Leads list and lives in
+    // Cases. An Admin can still ask for everything (?includeConverted=true).
+    if (!(user.role === Role.ADMIN && includeConverted === 'true')) {
+      filters.excludeActiveCases = true;
+    }
     return this.leadsService.findAll(filters);
   }
 

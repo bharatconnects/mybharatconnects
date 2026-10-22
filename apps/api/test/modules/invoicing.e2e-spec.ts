@@ -18,6 +18,7 @@ import {
   DocumentDocument,
   DocumentCategory,
 } from '../../src/modules/documents/schemas/document.schema';
+import { Payment, PaymentDocument } from '../../src/modules/payments/schemas/payment.schema';
 
 process.env.COMPANY_STATE = process.env.COMPANY_STATE || 'MH';
 
@@ -26,6 +27,7 @@ interface InvoicePayloadOverrides {
   clientId: string;
   state?: string;
   gstRate?: number;
+  sourcePaymentId?: string;
 }
 
 function buildInvoicePayload(opts: InvoicePayloadOverrides) {
@@ -45,6 +47,7 @@ function buildInvoicePayload(opts: InvoicePayloadOverrides) {
       { description: 'Notary fee', quantity: 1, unitPrice: 25000 },
     ],
     gstRate: opts.gstRate ?? 18,
+    ...(opts.sourcePaymentId ? { sourcePaymentId: opts.sourcePaymentId } : {}),
   };
 }
 
@@ -259,7 +262,7 @@ describe('Invoicing module (e2e)', () => {
   });
 
   describe('mark-paid flow', () => {
-    it('transitions ISSUED → PAID with paidAt set', async () => {
+    const issueInvoice = async (sourcePaymentStatus?: 'CAPTURED' | 'PENDING') => {
       const cm = await seedUser(ctx.app, Role.CASE_MANAGER);
       const client = await seedUser(ctx.app, Role.CLIENT);
       const caseDoc = await seedCase(ctx.app, {
@@ -268,6 +271,23 @@ describe('Invoicing module (e2e)', () => {
       });
       const { accessToken } = getTokens(ctx.app, cm);
 
+      let sourcePaymentId: string | undefined;
+      if (sourcePaymentStatus) {
+        const paymentModel = ctx.app.get<Model<PaymentDocument>>(getModelToken(Payment.name));
+        const payment = await paymentModel.create({
+          caseId: caseDoc._id,
+          clientId: new Types.ObjectId(client.userId),
+          direction: 'CLIENT_TO_CM',
+          provider: 'STRIPE',
+          settlement: sourcePaymentStatus === 'CAPTURED' ? 'STRIPE' : undefined,
+          amount: 100000,
+          status: sourcePaymentStatus,
+          type: 'CAPTURE',
+          stripePaymentIntentId: `pi_test_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        });
+        sourcePaymentId = (payment._id as Types.ObjectId).toString();
+      }
+
       const createRes = await request(ctx.app.getHttpServer())
         .post('/api/invoices')
         .set('Authorization', bearer(accessToken))
@@ -275,6 +295,7 @@ describe('Invoicing module (e2e)', () => {
           buildInvoicePayload({
             caseId: (caseDoc._id as Types.ObjectId).toString(),
             clientId: client.userId,
+            sourcePaymentId,
           }),
         );
       const created = unwrap<InvoiceResponse>(createRes);
@@ -283,14 +304,27 @@ describe('Invoicing module (e2e)', () => {
         .post(`/api/invoices/${created._id}/issue`)
         .set('Authorization', bearer(accessToken));
 
-      const paidRes = await request(ctx.app.getHttpServer())
+      return request(ctx.app.getHttpServer())
         .post(`/api/invoices/${created._id}/mark-paid`)
         .set('Authorization', bearer(accessToken));
+    };
 
+    it('transitions ISSUED → PAID with paidAt set when a captured payment is linked', async () => {
+      const paidRes = await issueInvoice('CAPTURED');
       expect([200, 201]).toContain(paidRes.status);
       const paid = unwrap<InvoiceResponse & { paidAt?: string }>(paidRes);
       expect(paid.status).toBe(InvoiceStatus.PAID);
       expect(paid.paidAt).toBeDefined();
+    });
+
+    it('rejects mark-paid with no linked payment (a CM cannot declare money received)', async () => {
+      const res = await issueInvoice();
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects mark-paid when the linked payment is not captured', async () => {
+      const res = await issueInvoice('PENDING');
+      expect(res.status).toBe(400);
     });
   });
 

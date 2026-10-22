@@ -68,8 +68,16 @@ export class CaseStageTimelineComponent {
     return STAGE_LABEL[s] ?? String(s);
   }
 
+  // Resolution pending is not a step of its own; the case is still waiting at
+  // Client Review, so that is where the timeline shows it.
+  private get effectiveStage(): string {
+    return this.currentStage === CaseStatus.RESOLUTION_PENDING
+      ? CaseStatus.CLIENT_REVIEW
+      : this.currentStage;
+  }
+
   private currentIndex(): number {
-    return this.stages.indexOf(this.currentStage as CaseStatus);
+    return this.stages.indexOf(this.effectiveStage as CaseStatus);
   }
 
   isCompleted(s: CaseStatus): boolean {
@@ -78,7 +86,7 @@ export class CaseStageTimelineComponent {
   }
 
   isCurrent(s: CaseStatus): boolean {
-    return this.currentStage === s;
+    return this.effectiveStage === s;
   }
 
   circleClass(s: CaseStatus): string {

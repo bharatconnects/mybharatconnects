@@ -93,6 +93,13 @@ export const ADMIN_ROUTES: Routes = [
           import('./pages/admin-reports.component').then((m) => m.AdminReportsComponent),
       },
       {
+        path: 'settings',
+        title: 'Settings | MyBharatConnects',
+        canActivate: [roleGuard([Role.ADMIN])],
+        loadComponent: () =>
+          import('./pages/admin-settings.component').then((m) => m.AdminSettingsComponent),
+      },
+      {
         path: 'profile',
         title: 'My Profile | MyBharatConnects',
         canActivate: [roleGuard([Role.ADMIN])],

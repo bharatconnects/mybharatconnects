@@ -18,6 +18,11 @@ import { RequestPaymentDto } from './dto/request-payment.dto';
 import { RequestVendorPaymentDto } from './dto/request-vendor-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { MarkPaymentPaidDto } from './dto/mark-payment-paid.dto';
+import {
+  DecideOfflinePaymentDto,
+  RejectOfflinePaymentDto,
+  RequestOfflinePaymentDto,
+} from './dto/offline-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -95,7 +100,7 @@ export class PaymentsController {
     @Body() dto: RequestPaymentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.paymentsService.requestPayment(user.userId, dto);
+    return this.paymentsService.requestPayment(user.userId, dto, user.role);
   }
 
   @Patch(':id')
@@ -161,7 +166,8 @@ export class PaymentsController {
   @Post(':id/mark-paid')
   @Roles(Role.OPS_FINANCE, Role.CASE_MANAGER, Role.ADMIN)
   @ApiOperation({
-    summary: 'Confirm a requested payment was received, optionally attaching a receipt (OPS_FINANCE, CASE_MANAGER, ADMIN)',
+    summary:
+      'Mark a VENDOR PAYOUT paid, optionally attaching a receipt. Client payments are rejected: they settle through Stripe or an approved off-platform request (OPS_FINANCE, CASE_MANAGER, ADMIN)',
   })
   markPaid(
     @Param('id') id: string,
@@ -186,8 +192,75 @@ export class PaymentsController {
   @ApiOperation({
     summary: 'Refund a captured payment (OPS_FINANCE, ADMIN)',
   })
-  refundPayment(@Param('id') id: string, @Body() dto: RefundDto) {
-    return this.paymentsService.refundPayment(id, dto.reason);
+  refundPayment(
+    @Param('id') id: string,
+    @Body() dto: RefundDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.paymentsService.refundPayment(id, dto.reason, user);
+  }
+
+  @Post('offline-request')
+  @Roles(Role.CASE_MANAGER, Role.OPS_FINANCE, Role.ADMIN)
+  @ApiOperation({
+    summary:
+      'Record a client payment received outside Stripe; it counts for nothing until an Admin approves it (CASE_MANAGER — own case, OPS_FINANCE, ADMIN)',
+  })
+  requestOfflinePayment(
+    @Body() dto: RequestOfflinePaymentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.paymentsService.requestOfflinePayment(user, dto);
+  }
+
+  @Get('offline-requests')
+  @Roles(Role.ADMIN, Role.OPS_FINANCE)
+  @ApiOperation({ summary: 'List off-platform payment requests (ADMIN, OPS_FINANCE)' })
+  listOfflineRequests(@Query('status') status?: string) {
+    return this.paymentsService.findOfflineRequests(status);
+  }
+
+  @Post(':id/offline/approve')
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Approve an off-platform payment; cannot be the person who recorded it (ADMIN)',
+  })
+  approveOffline(
+    @Param('id') id: string,
+    @Body() dto: DecideOfflinePaymentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.paymentsService.approveOfflinePayment(id, user, dto.note);
+  }
+
+  @Post(':id/offline/reject')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Reject an off-platform payment, with a reason (ADMIN)' })
+  rejectOffline(
+    @Param('id') id: string,
+    @Body() dto: RejectOfflinePaymentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.paymentsService.rejectOfflinePayment(id, user, dto.note);
+  }
+
+  @Post(':id/sync')
+  @Roles(Role.CASE_MANAGER, Role.OPS_FINANCE, Role.ADMIN)
+  @ApiOperation({
+    summary:
+      'Re-check a Stripe payment with Stripe and apply what Stripe reports; cannot mark anything paid by itself (CASE_MANAGER — own case, OPS_FINANCE, ADMIN)',
+  })
+  syncWithStripe(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.paymentsService.syncWithStripe(id, user);
+  }
+
+  @Get(':id/events')
+  @Roles(Role.ADMIN, Role.OPS_FINANCE, Role.CASE_MANAGER)
+  @ApiOperation({
+    summary: 'Audit trail for a payment (ADMIN, OPS_FINANCE, CASE_MANAGER — own case)',
+  })
+  findEvents(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.paymentsService.findEvents(id, user);
   }
 
   @Post('webhook')
@@ -215,7 +288,7 @@ export class PaymentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     if (user.role === Role.CLIENT) {
-      return this.paymentsService.findAll({ clientId: user.userId });
+      return this.paymentsService.findAll({ clientId: user.userId, hideOfflineDrafts: true });
     }
     if (user.role === Role.CASE_MANAGER) {
       return this.paymentsService.findAllForCaseManager(user.userId, query);

@@ -104,6 +104,112 @@ export class CaseNote {
   createdAt: Date;
 }
 
+export type CasePaymentPolicySource = 'SETTINGS' | 'ADJUSTED';
+export type AdvanceMode = 'PERCENT' | 'FIXED';
+
+export class CasePaymentPolicyChange {
+  @Prop({ type: Date })
+  at: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  by?: Types.ObjectId;
+
+  @Prop({ type: String })
+  byRole?: string;
+
+  @Prop({ type: Object })
+  from: { mode: AdvanceMode; advancePercent: number; advanceAmount?: number };
+
+  @Prop({ type: Object })
+  to: { mode: AdvanceMode; advancePercent: number; advanceAmount?: number };
+
+  @Prop({ type: String })
+  note?: string;
+
+  @Prop({ type: String })
+  arrangementNote?: string;
+}
+
+// The advance rule that applies to this case. It starts as the platform
+// default when the quote is accepted, so a later change to that default does
+// not move the goalposts for a client who has already agreed. The case
+// manager (or an Admin) can then change it for this case after talking to the
+// client, either as a percentage of the quote or as a fixed amount. Every
+// change is kept in `history` with who made it and why, and the agreed
+// arrangement for the remainder is stored alongside. The checkpoint itself is
+// never skipped: only the amount it asks for changes.
+export class CasePaymentPolicy {
+  @Prop({ type: String, enum: ['PERCENT', 'FIXED'], default: 'PERCENT' })
+  mode: AdvanceMode;
+
+  @Prop({ type: Number, min: 0, max: 100 })
+  advancePercent: number;
+
+  // Minor units. Used when mode is FIXED.
+  @Prop({ type: Number, min: 0 })
+  advanceAmount?: number;
+
+  @Prop({ type: String, enum: ['SETTINGS', 'ADJUSTED'] })
+  source: CasePaymentPolicySource;
+
+  @Prop({ type: Date })
+  setAt: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  setBy?: Types.ObjectId;
+
+  @Prop({ type: String })
+  note?: string;
+
+  // What was agreed about paying the rest, if anything.
+  @Prop({ type: String })
+  arrangementNote?: string;
+
+  @Prop({ type: [Object], default: [] })
+  history: CasePaymentPolicyChange[];
+}
+
+// Everything that happened around closing the case, kept for audit: who asked
+// for closure and when, what had been paid and delivered at that moment, how
+// long the client had, and how it ended.
+export class CaseClosure {
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  requestedBy?: Types.ObjectId;
+
+  @Prop({ type: Date })
+  requestedAt?: Date;
+
+  @Prop({ type: Date })
+  windowEndsAt?: Date;
+
+  @Prop({ type: Date })
+  clientConfirmedAt?: Date;
+
+  @Prop({ type: Date })
+  issueRaisedAt?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'Dispute' })
+  issueDisputeId?: Types.ObjectId;
+
+  @Prop({ type: Date })
+  issueResolvedAt?: Date;
+
+  @Prop({ type: Date })
+  closedAt?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  closedBy?: Types.ObjectId;
+
+  @Prop({ type: String, enum: ['CLIENT_CONFIRMED', 'WINDOW_ELAPSED'] })
+  closedVia?: 'CLIENT_CONFIRMED' | 'WINDOW_ELAPSED';
+
+  @Prop({ type: Object })
+  payment?: { paid: number; total: number; currency: string | null };
+
+  @Prop({ type: Object })
+  delivery?: { delivered: number; total: number };
+}
+
 @Schema({ timestamps: true })
 export class Case {
   @Prop({ type: String, unique: true })
@@ -240,6 +346,41 @@ export class Case {
 
   @Prop({ type: Date })
   holdReleaseScheduledAt?: Date;
+
+  @Prop({
+    type: {
+      mode: { type: String, enum: ['PERCENT', 'FIXED'], default: 'PERCENT' },
+      advancePercent: { type: Number, min: 0, max: 100 },
+      advanceAmount: { type: Number, min: 0 },
+      source: { type: String, enum: ['SETTINGS', 'ADJUSTED'] },
+      setAt: Date,
+      setBy: { type: Types.ObjectId, ref: 'User' },
+      note: String,
+      arrangementNote: String,
+      history: { type: [Object], default: [] },
+    },
+    _id: false,
+  })
+  paymentPolicy?: CasePaymentPolicy;
+
+  @Prop({
+    type: {
+      requestedBy: { type: Types.ObjectId, ref: 'User' },
+      requestedAt: Date,
+      windowEndsAt: Date,
+      clientConfirmedAt: Date,
+      issueRaisedAt: Date,
+      issueDisputeId: { type: Types.ObjectId, ref: 'Dispute' },
+      issueResolvedAt: Date,
+      closedAt: Date,
+      closedBy: { type: Types.ObjectId, ref: 'User' },
+      closedVia: { type: String, enum: ['CLIENT_CONFIRMED', 'WINDOW_ELAPSED'] },
+      payment: { type: Object },
+      delivery: { type: Object },
+    },
+    _id: false,
+  })
+  closure?: CaseClosure;
 }
 
 export const CaseSchema = SchemaFactory.createForClass(Case);

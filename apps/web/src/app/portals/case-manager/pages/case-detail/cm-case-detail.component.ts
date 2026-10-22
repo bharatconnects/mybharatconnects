@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ConfirmDialogService } from '../../../../core/services/confirm-dialog.service';
@@ -13,6 +14,8 @@ import {
   isDocumentFileTooLarge,
 } from '../../../../shared/utils/document-file-types.util';
 import {
+  OFFLINE_METHOD_LABEL,
+  OfflinePaymentMethod,
   PaymentsService,
   Payment as CasePayment,
   PaymentPurpose,
@@ -25,9 +28,17 @@ import { VERTICAL_NAMES } from '../../../../shared/data/service-catalog';
 import {
   CaseStatus,
   STAGE_LABEL,
+  STAGE_ORDER,
   VALID_TRANSITIONS,
   stageCssClass,
 } from '../../../../core/models/case-status.model';
+import {
+  CaseCheckpoints,
+  CheckpointsService,
+  formatMinor,
+} from '../../../../core/services/checkpoints.service';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { Role } from '../../../../core/models/user.model';
 import { CaseStageTimelineComponent } from '../../../../shared/components/case-stage-timeline/case-stage-timeline.component';
 
 interface Note {
@@ -187,6 +198,14 @@ interface CaseDetail {
   createdAt: string;
   updatedAt: string;
   assignedVendor?: Vendor;
+  closure?: {
+    requestedAt?: string;
+    windowEndsAt?: string;
+    clientConfirmedAt?: string;
+    issueRaisedAt?: string;
+    issueResolvedAt?: string;
+    closedAt?: string;
+  };
   // Populated refs from GET /cases/:id (see cases.service.ts findById)
   clientId?: string | PopulatedUserRef;
   caseManagerId?: string | PopulatedUserRef;
@@ -453,6 +472,182 @@ interface CaseVendorInvoiceOption {
         </div>
       </div>
 
+      <!-- Payment checkpoints -->
+      @if (checkpoints) {
+        <div class="bb-card mb-4">
+          <div class="bb-card-body">
+            <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+              <h3 class="bb-section-title !mb-0">Payment checkpoints</h3>
+              @if (!advanceOverrideOpen && caseDetail.status !== 'CLOSED') {
+                <button type="button" class="bb-btn bb-btn-ghost bb-btn-sm" (click)="openAdvanceOverride()">
+                  Agree the advance for this case
+                </button>
+              }
+            </div>
+
+            @if (checkpoints.currencyMismatch) {
+              <div
+                class="flex items-start gap-2 px-3 py-2 rounded-lg mb-3 text-sm bg-warning/10 text-warning border border-warning/30"
+                role="alert"
+              >
+                <i class="material-icons-outlined text-base mt-0.5">currency_exchange</i>
+                <p class="m-0">
+                  The accepted quote is written in {{ checkpoints.quoteCurrency }}, but clients pay in US dollars.
+                  The checks below compare the quote's total with dollars received as plain numbers, so make sure the
+                  figure the client agreed is the dollar amount.
+                </p>
+              </div>
+            }
+
+            @if (!checkpoints.hasAcceptedQuote) {
+              <p class="text-sm text-base-content/70 m-0">
+                No quote has been accepted on this case yet, so no payment is due.
+                @if (checkpoints.policy.advanceConfigured) {
+                  The agreed advance ({{ advanceLabel }}) will be requested once the client accepts a quote.
+                }
+              </p>
+            } @else {
+              <ul class="flex flex-col gap-2 text-sm list-none p-0 m-0">
+                <li class="flex flex-wrap items-center gap-2">
+                  <span class="font-medium w-36">Advance to open the case</span>
+                  @if (!checkpoints.policy.advanceConfigured) {
+                    <span class="text-base-content/60">Not required</span>
+                  } @else {
+                    <span>{{ advanceLabel }} · paid {{ money(checkpoints.paid) }}</span>
+                    <span class="bb-chip" [ngClass]="checkpoints.advance.satisfied ? 'bb-chip-success' : 'bb-chip-warning'">{{
+                      checkpoints.advance.satisfied ? 'Received' : money(checkpoints.advance.remaining) + ' due'
+                    }}</span>
+                  }
+                </li>
+                <li class="flex flex-wrap items-center gap-2">
+                  <span class="font-medium w-36">Full payment</span>
+                  <span>{{ money(checkpoints.paid) }} of {{ money(checkpoints.contractTotal) }}</span>
+                  <span class="bb-chip" [ngClass]="checkpoints.final.satisfied ? 'bb-chip-success' : 'bb-chip-warning'">{{
+                    checkpoints.final.satisfied ? 'Paid in full' : money(checkpoints.final.remaining) + ' to pay'
+                  }}</span>
+                  @if (checkpoints.final.unrequested > 0) {
+                    <button
+                      type="button"
+                      class="bb-btn bb-btn-outline bb-btn-sm"
+                      (click)="requestBalance()"
+                      [disabled]="requestingBalance"
+                      title="Ask the client to pay what is not yet paid or requested"
+                    >
+                      {{ requestingBalance ? 'Requesting…' : 'Request ' + money(checkpoints.final.unrequested) + ' balance' }}
+                    </button>
+                  }
+                </li>
+                <li class="flex flex-wrap items-center gap-2">
+                  <span class="font-medium w-36">Delivery</span>
+                  <span>{{ checkpoints.delivery.delivered }} of {{ checkpoints.delivery.total }} milestones delivered</span>
+                  <span class="bb-chip" [ngClass]="checkpoints.delivery.satisfied ? 'bb-chip-success' : 'bb-chip-warning'">{{
+                    checkpoints.delivery.satisfied ? 'Complete' : 'In progress'
+                  }}</span>
+                </li>
+              </ul>
+              <p class="text-xs text-base-content/50 mt-3 mb-0">
+                Only Stripe payments and off-platform payments approved by an Admin count as received. A milestone
+                counts as delivered once the vendor marks it complete; the client's approval is welcome but never required.
+              </p>
+            }
+
+            @if (checkpoints.policy.arrangementNote) {
+              <p class="text-sm mt-3 mb-0">
+                <span class="font-medium">Agreed for the rest:</span> {{ checkpoints.policy.arrangementNote }}
+              </p>
+            }
+
+            @if (advanceOverrideOpen) {
+              <div class="mt-4 pt-4 border-t border-base-300 flex flex-col gap-3">
+                <p class="text-sm text-base-content/70 m-0">
+                  Record what you agreed with the client. The advance is still collected before the case opens;
+                  only the amount changes. Who changed it, when and why is kept on the case.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                  <div>
+                    <label class="bb-label" for="adv-mode">Advance is</label>
+                    <select id="adv-mode" class="select select-bordered w-full" [(ngModel)]="advanceMode">
+                      <option value="PERCENT">A percentage of the quote</option>
+                      <option value="FIXED">A fixed amount (USD)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="bb-label" for="adv-value">{{
+                      advanceMode === 'PERCENT' ? 'Percentage (0 to 100)' : 'Amount (USD)'
+                    }}</label>
+                    <input
+                      id="adv-value"
+                      type="number"
+                      min="0"
+                      [attr.max]="advanceMode === 'PERCENT' ? 100 : null"
+                      [step]="advanceMode === 'PERCENT' ? 1 : 0.01"
+                      class="bb-input"
+                      [(ngModel)]="advanceValue"
+                    />
+                  </div>
+                  <div>
+                    <label class="bb-label" for="adv-override-note">Reason (kept on the case)</label>
+                    <input id="adv-override-note" class="bb-input" maxlength="500" [(ngModel)]="advanceOverrideNote" />
+                  </div>
+                </div>
+                <div>
+                  <label class="bb-label" for="adv-arrangement"
+                    >What was agreed about paying the rest
+                    <span class="font-normal text-base-content/60">(optional, the client can see this)</span></label
+                  >
+                  <textarea
+                    id="adv-arrangement"
+                    rows="2"
+                    maxlength="1000"
+                    class="textarea textarea-bordered w-full text-sm"
+                    [(ngModel)]="advanceArrangement"
+                  ></textarea>
+                </div>
+                <div class="flex gap-2 justify-end">
+                  <button type="button" class="bb-btn bb-btn-ghost bb-btn-sm" (click)="advanceOverrideOpen = false">
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    class="bb-btn bb-btn-primary bb-btn-sm"
+                    (click)="saveAdvanceOverride()"
+                    [disabled]="advanceOverrideBusy"
+                  >
+                    {{ advanceOverrideBusy ? 'Saving…' : 'Save advance' }}
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (checkpoints.policy.history.length) {
+              <details class="mt-4 text-sm">
+                <summary class="cursor-pointer text-base-content/70">
+                  Advance history ({{ checkpoints.policy.history.length }})
+                </summary>
+                <ul class="list-none p-0 mt-2 mb-0 divide-y divide-base-300">
+                  @for (h of checkpoints.policy.history; track h.at) {
+                    <li class="py-2">
+                      <div>
+                        {{ describeTerms(h.from) }} → <strong>{{ describeTerms(h.to) }}</strong>
+                        <span class="text-base-content/50">
+                          · {{ h.at | date: 'medium' }} · {{ h.byRole === 'ADMIN' ? 'Admin' : 'Case manager' }}</span
+                        >
+                      </div>
+                      @if (h.note) {
+                        <div class="text-base-content/70">{{ h.note }}</div>
+                      }
+                      @if (h.arrangementNote) {
+                        <div class="text-base-content/70">Rest: {{ h.arrangementNote }}</div>
+                      }
+                    </li>
+                  }
+                </ul>
+              </details>
+            }
+          </div>
+        </div>
+      }
+
       <!-- Stage Transition -->
       <div class="bb-card mb-4">
         <div class="bb-card-body">
@@ -481,44 +676,90 @@ interface CaseVendorInvoiceOption {
               <button
                 class="bb-btn bb-btn-primary"
                 (click)="transitionStage()"
-                [disabled]="transitioning || !newStatus"
+                [disabled]="transitioning || !newStatus || !!selectedStageBlock"
               >
                 {{ transitioning ? 'Saving...' : 'Update Stage' }}
               </button>
             </div>
+            @if (selectedStageBlock; as why) {
+              <p class="text-sm text-warning mt-3 mb-0" role="status">{{ why }}</p>
+            }
           } @else {
             <p class="text-sm text-base-content/60 py-2">
               No further transitions available from {{ stageLabel(caseDetail.status) }}.
             </p>
           }
 
-          @if (caseDetail.status === 'QA_REVIEW') {
+          <!-- Case closure -->
+          @if (caseDetail.status === 'RESOLUTION_PENDING') {
+            <div
+              class="flex items-start gap-2 px-4 py-2.5 rounded-lg mt-4 text-sm bg-error/10 text-error border border-error/20"
+              role="status"
+            >
+              <i class="material-icons-outlined text-base mt-0.5">report_problem</i>
+              <p class="m-0">
+                The client raised an issue instead of accepting closure. Settle it under Disputes. Once every
+                issue on this case is resolved the case returns to Client Review and closure can be requested
+                again.
+              </p>
+            </div>
+          }
+
+          @if (canRequestClosure) {
             <div class="mt-4 pt-4 border-t border-base-300">
               <p class="text-sm text-base-content/70 mb-2">
-                Once QA has verified all documents, notify the client to confirm case completion.
+                Tell the client the work is complete. They get {{ closeWindowHours }} hours to confirm or raise an
+                issue, and you can close the case after that. Final payment and delivery are checked first.
               </p>
+              @if (closureReadinessBlock; as why) {
+                <p class="text-sm text-warning mb-2" role="status">{{ why }}</p>
+              }
               <button
                 class="bb-btn bb-btn-primary bb-btn-sm"
                 (click)="requestCloseConfirmation()"
-                [disabled]="requestingCloseConfirmation"
+                [disabled]="requestingCloseConfirmation || !!closureReadinessBlock"
               >
                 <i class="material-icons-outlined text-base">mark_email_read</i>
-                {{
-                  requestingCloseConfirmation
-                    ? 'Requesting...'
-                    : 'Request Close Confirmation from Client'
-                }}
+                {{ requestingCloseConfirmation ? 'Requesting...' : 'Request closure' }}
               </button>
             </div>
           }
 
-          @if (caseDetail.status === 'CLIENT_REVIEW') {
-            <div
-              class="flex items-start gap-2 px-4 py-2.5 rounded-lg mt-4 text-sm bg-info/10 text-info border border-info/20"
-            >
-              <i class="material-icons-outlined text-base mt-0.5">hourglass_top</i>
-              <p class="m-0">Awaiting client confirmation to close this case.</p>
-            </div>
+          @if (caseDetail.status === 'CLIENT_REVIEW' && caseDetail.closure?.requestedAt) {
+            @if (closureWindowOpen) {
+              <div
+                class="flex items-start gap-2 px-4 py-2.5 rounded-lg mt-4 text-sm bg-info/10 text-info border border-info/20"
+              >
+                <i class="material-icons-outlined text-base mt-0.5">hourglass_top</i>
+                <p class="m-0">
+                  Closure requested {{ caseDetail.closure!.requestedAt | date: 'medium' }}. The client can confirm
+                  or raise an issue until {{ caseDetail.closure!.windowEndsAt | date: 'medium' }}. You can close the
+                  case after that.
+                </p>
+              </div>
+            } @else {
+              <div class="mt-4 pt-4 border-t border-base-300">
+                <p class="text-sm text-base-content/70 mb-2">
+                  {{
+                    caseDetail.closure!.clientConfirmedAt
+                      ? 'The client confirmed the work.'
+                      : 'The client window has ended with no issue raised.'
+                  }}
+                  The case is ready to close.
+                </p>
+                @if (closureReadinessBlock; as why) {
+                  <p class="text-sm text-warning mb-2" role="status">{{ why }}</p>
+                }
+                <button
+                  class="bb-btn bb-btn-primary bb-btn-sm"
+                  (click)="closeCase()"
+                  [disabled]="closingCase || !!closureReadinessBlock"
+                >
+                  <i class="material-icons-outlined text-base">task_alt</i>
+                  {{ closingCase ? 'Closing...' : 'Close case' }}
+                </button>
+              </div>
+            }
           }
         </div>
       </div>
@@ -1443,16 +1684,25 @@ interface CaseVendorInvoiceOption {
                           milestoneStatusLabel(m.status)
                         }}</span>
                         @if (m.status === 'VENDOR_MARKED_DONE') {
-                          <span class="text-xs text-base-content/50 italic">Awaiting client validation</span>
+                          <span class="text-xs text-base-content/50 italic">Client approval is optional</span>
                         }
-                        @if (m.status === 'CLIENT_APPROVED') {
-                          <button
-                            class="bb-btn bb-btn-primary bb-btn-sm"
-                            (click)="markMilestonePaid(q, m)"
-                            [disabled]="milestoneBusyId === m._id"
-                          >
-                            {{ milestoneBusyId === m._id ? 'Saving…' : 'Mark Paid' }}
-                          </button>
+                        @if (m.status === 'CLIENT_APPROVED' || m.status === 'VENDOR_MARKED_DONE') {
+                          @if (milestonePayment(m); as mp) {
+                            <span class="bb-chip" [ngClass]="paymentStatusChip(mp.status)">{{
+                              mp.status === 'pending'
+                                ? 'Payment requested from client'
+                                : 'Payment ' + paymentStatusText(mp.status).toLowerCase()
+                            }}</span>
+                          } @else {
+                            <button
+                              class="bb-btn bb-btn-primary bb-btn-sm"
+                              (click)="requestMilestonePayment(q, m)"
+                              [disabled]="milestoneBusyId === m._id"
+                              title="Ask the client to pay this milestone through Stripe"
+                            >
+                              {{ milestoneBusyId === m._id ? 'Requesting…' : 'Request payment' }}
+                            </button>
+                          }
                         }
                       </div>
                     }
@@ -1652,7 +1902,7 @@ interface CaseVendorInvoiceOption {
                                 {{ issuingInvoiceId === inv._id ? 'Issuing…' : 'Issue' }}
                               </button>
                             }
-                            @if (inv.status === 'ISSUED') {
+                            @if (inv.status === 'ISSUED' && inv.sourcePaymentId) {
                               <button
                                 class="bb-btn bb-btn-outline bb-btn-sm"
                                 (click)="markInvoicePaid(inv)"
@@ -1660,6 +1910,10 @@ interface CaseVendorInvoiceOption {
                               >
                                 {{ issuingInvoiceId === inv._id ? 'Saving…' : 'Mark Paid' }}
                               </button>
+                            } @else if (inv.status === 'ISSUED') {
+                              <span class="text-xs text-base-content/50 italic"
+                                >Link a received payment to mark paid</span
+                              >
                             }
                           </div>
                         </td>
@@ -2051,8 +2305,13 @@ interface CaseVendorInvoiceOption {
                         </td>
                         <td>
                           <span class="bb-chip" [ngClass]="paymentStatusChip(p.status)">{{
-                            p.status | titlecase
+                            paymentStatusText(p.status)
                           }}</span>
+                          @if (p.status === 'rejected' && p.offline?.decisionNote) {
+                            <div class="text-[0.6875rem] text-base-content/60 mt-0.5 max-w-[160px]">
+                              {{ p.offline!.decisionNote }}
+                            </div>
+                          }
                         </td>
                         <td class="hidden md:table-cell text-xs text-base-content/70 max-w-[200px] truncate">
                           {{ p.description || '—' }}
@@ -2080,12 +2339,37 @@ interface CaseVendorInvoiceOption {
                               </button>
                             }
                             @if (p.status === 'pending' && markPaidFormId !== p._id) {
-                              <button
-                                class="bb-btn bb-btn-outline bb-btn-sm"
-                                (click)="openMarkPaidForm(p)"
+                              @if (p.direction === 'CM_TO_VENDOR') {
+                                <button
+                                  class="bb-btn bb-btn-outline bb-btn-sm"
+                                  (click)="openMarkPaidForm(p)"
+                                >
+                                  Mark Paid
+                                </button>
+                              } @else {
+                                @if (p.transactionId) {
+                                  <button
+                                    class="bb-btn bb-btn-ghost bb-btn-sm"
+                                    (click)="syncPaymentWithStripe(p)"
+                                    [disabled]="syncBusyId === p._id"
+                                    title="Ask Stripe whether this payment went through"
+                                  >
+                                    {{ syncBusyId === p._id ? 'Checking…' : 'Check with Stripe' }}
+                                  </button>
+                                }
+                                <button
+                                  class="bb-btn bb-btn-outline bb-btn-sm"
+                                  (click)="openMarkPaidForm(p)"
+                                  title="The client paid outside Stripe. An Admin must approve it."
+                                >
+                                  Paid outside Stripe
+                                </button>
+                              }
+                            }
+                            @if (p.status === 'pending_approval') {
+                              <span class="text-xs text-base-content/60 italic"
+                                >Waiting for Admin approval</span
                               >
-                                Mark Paid
-                              </button>
                             }
                             <button
                               type="button"
@@ -2272,36 +2556,114 @@ interface CaseVendorInvoiceOption {
                       @if (markPaidFormId === p._id) {
                         <tr>
                           <td colspan="7">
-                            <div class="flex flex-col sm:flex-row sm:items-end gap-3 py-2">
-                              <div class="flex-1">
-                                <label class="bb-label" [attr.for]="'receipt-' + p._id"
-                                  >Receipt (optional)</label
-                                >
-                                <input
-                                  [id]="'receipt-' + p._id"
-                                  type="file"
-                                  class="file-input file-input-bordered file-input-sm w-full"
-                                  (change)="onReceiptFileSelected($event)"
-                                />
+                            @if (p.direction === 'CM_TO_VENDOR') {
+                              <div class="flex flex-col sm:flex-row sm:items-end gap-3 py-2">
+                                <div class="flex-1">
+                                  <label class="bb-label" [attr.for]="'receipt-' + p._id"
+                                    >Receipt (optional)</label
+                                  >
+                                  <input
+                                    [id]="'receipt-' + p._id"
+                                    type="file"
+                                    class="file-input file-input-bordered file-input-sm w-full"
+                                    (change)="onReceiptFileSelected($event)"
+                                  />
+                                </div>
+                                <div class="flex gap-2">
+                                  <button
+                                    type="button"
+                                    class="bb-btn bb-btn-ghost bb-btn-sm"
+                                    (click)="cancelMarkPaid()"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    class="bb-btn bb-btn-primary bb-btn-sm"
+                                    (click)="markPaymentPaid(p)"
+                                    [disabled]="markPaidBusyId === p._id"
+                                  >
+                                    {{ markPaidBusyId === p._id ? 'Saving…' : 'Confirm Paid' }}
+                                  </button>
+                                </div>
                               </div>
-                              <div class="flex gap-2">
-                                <button
-                                  type="button"
-                                  class="bb-btn bb-btn-ghost bb-btn-sm"
-                                  (click)="cancelMarkPaid()"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  class="bb-btn bb-btn-primary bb-btn-sm"
-                                  (click)="markPaymentPaid(p)"
-                                  [disabled]="markPaidBusyId === p._id"
-                                >
-                                  {{ markPaidBusyId === p._id ? 'Saving…' : 'Confirm Received' }}
-                                </button>
+                            } @else {
+                              <div class="flex flex-col gap-3 py-2">
+                                <p class="text-xs text-base-content/70 m-0">
+                                  Client payments are confirmed by Stripe. If this client paid another way, record it
+                                  here. It does not count as received until an Admin approves it.
+                                </p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div>
+                                    <label class="bb-label" [attr.for]="'offline-method-' + p._id">How was it paid?</label>
+                                    <select
+                                      [id]="'offline-method-' + p._id"
+                                      class="select select-bordered select-sm w-full"
+                                      [(ngModel)]="offlineMethod"
+                                    >
+                                      @for (opt of offlineMethodOptions; track opt.value) {
+                                        <option [value]="opt.value">{{ opt.label }}</option>
+                                      }
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label class="bb-label" [attr.for]="'offline-ref-' + p._id"
+                                      >Reference {{ offlineMethod === 'CASH' ? '(optional)' : '(UTR, UPI id, cheque no.)' }}</label
+                                    >
+                                    <input
+                                      [id]="'offline-ref-' + p._id"
+                                      type="text"
+                                      maxlength="80"
+                                      class="input input-bordered input-sm w-full"
+                                      [(ngModel)]="offlineReference"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label class="bb-label" [attr.for]="'offline-note-' + p._id"
+                                    >Why was this not paid through Stripe?</label
+                                  >
+                                  <textarea
+                                    [id]="'offline-note-' + p._id"
+                                    rows="2"
+                                    maxlength="1000"
+                                    class="textarea textarea-bordered w-full text-sm"
+                                    [(ngModel)]="offlineNote"
+                                  ></textarea>
+                                </div>
+                                <div>
+                                  <label class="bb-label" [attr.for]="'receipt-' + p._id"
+                                    >Proof of payment (optional)</label
+                                  >
+                                  <input
+                                    [id]="'receipt-' + p._id"
+                                    type="file"
+                                    class="file-input file-input-bordered file-input-sm w-full"
+                                    (change)="onReceiptFileSelected($event)"
+                                  />
+                                </div>
+                                @if (offlineFormError) {
+                                  <p class="text-xs text-error m-0" role="alert">{{ offlineFormError }}</p>
+                                }
+                                <div class="flex gap-2 justify-end">
+                                  <button
+                                    type="button"
+                                    class="bb-btn bb-btn-ghost bb-btn-sm"
+                                    (click)="cancelMarkPaid()"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    class="bb-btn bb-btn-primary bb-btn-sm"
+                                    (click)="submitOfflinePayment(p)"
+                                    [disabled]="markPaidBusyId === p._id"
+                                  >
+                                    {{ markPaidBusyId === p._id ? 'Sending…' : 'Send for Admin approval' }}
+                                  </button>
+                                </div>
                               </div>
-                            </div>
+                            }
                           </td>
                         </tr>
                       }
@@ -2551,6 +2913,14 @@ export class CmCaseDetailComponent implements OnInit {
   markPaidFormId: string | null = null;
   markPaidBusyId: string | null = null;
   markPaidReceiptFile: File | null = null;
+  syncBusyId: string | null = null;
+  offlineMethod: OfflinePaymentMethod = 'BANK_TRANSFER';
+  offlineReference = '';
+  offlineNote = '';
+  offlineFormError = '';
+  readonly offlineMethodOptions = (
+    Object.keys(OFFLINE_METHOD_LABEL) as OfflinePaymentMethod[]
+  ).map((value) => ({ value, label: OFFLINE_METHOD_LABEL[value] }));
   editPaymentId: string | null = null;
   editPaymentForm: {
     amountInRupees: number | null;
@@ -2635,6 +3005,8 @@ export class CmCaseDetailComponent implements OnInit {
     private location: Location,
     private documentsService: DocumentsService,
     private paymentsService: PaymentsService,
+    private checkpointsService: CheckpointsService,
+    private auth: AuthService,
   ) {}
 
   @HostListener('document:click', ['$event'])
@@ -2670,6 +3042,7 @@ export class CmCaseDetailComponent implements OnInit {
         this.loadDocuments(c._id);
         this.loadInvoices(c._id);
         this.loadPayments(c._id);
+        this.loadCheckpoints(c._id);
       },
       error: () => {
         this.loading = false;
@@ -2955,10 +3328,181 @@ export class CmCaseDetailComponent implements OnInit {
       next: (rows) => {
         this.casePayments = rows ?? [];
         this.paymentsLoading = false;
+        // Payments feed the advance and final-payment checks.
+        if (this.caseDetail) this.loadCheckpoints(caseId);
       },
       error: () => {
         this.casePayments = [];
         this.paymentsLoading = false;
+      },
+    });
+  }
+
+  // ---------- Payment checkpoints ----------
+  checkpoints: CaseCheckpoints | null = null;
+  advanceOverrideOpen = false;
+  advanceMode: 'PERCENT' | 'FIXED' = 'PERCENT';
+  /** Percent when the mode is a percentage, dollars when it is a fixed amount. */
+  advanceValue: number | null = null;
+  advanceOverrideNote = '';
+  advanceArrangement = '';
+  advanceOverrideBusy = false;
+  requestingBalance = false;
+
+  get isAdminUser(): boolean {
+    return this.auth.isRole(Role.ADMIN);
+  }
+
+  /** "30% of the quote" or "$1,500.00 fixed". */
+  get advanceLabel(): string {
+    const cp = this.checkpoints;
+    if (!cp) return '';
+    return cp.policy.mode === 'FIXED'
+      ? `${this.money(cp.advance.required)} fixed`
+      : `${cp.advance.percent}% of the quote (${this.money(cp.advance.required)})`;
+  }
+
+  describeTerms(t: { mode: string; advancePercent: number; advanceAmount?: number }): string {
+    return t.mode === 'FIXED' ? `${this.money(t.advanceAmount ?? 0)} fixed` : `${t.advancePercent}%`;
+  }
+
+  money(minor: number): string {
+    return formatMinor(minor, this.checkpoints?.currency ?? null);
+  }
+
+  loadCheckpoints(caseId: string): void {
+    this.checkpointsService.getPaymentPolicy().subscribe({
+      next: (policy) => (this.closeWindowHours = policy.closeWindowHours),
+      error: () => undefined,
+    });
+    this.checkpointsService.getCheckpoints(caseId).subscribe({
+      next: (cp) => (this.checkpoints = cp),
+      // The card is informational; the server still enforces the rules.
+      error: () => (this.checkpoints = null),
+    });
+  }
+
+  /** Why the selected stage cannot be reached yet, mirroring the server rules. */
+  stageBlockReason(target: string): string | null {
+    const cp = this.checkpoints;
+    if (!cp || !this.caseDetail || !target) return null;
+    const openIdx = STAGE_ORDER.indexOf(CaseStatus.CASE_OPEN);
+    // Resolution pending counts as the late stage it is entered from.
+    const current =
+      this.caseDetail.status === CaseStatus.RESOLUTION_PENDING
+        ? CaseStatus.CLIENT_REVIEW
+        : this.caseDetail.status;
+    const crossesIntoOpen =
+      STAGE_ORDER.indexOf(target as CaseStatus) >= openIdx &&
+      STAGE_ORDER.indexOf(current as CaseStatus) < openIdx;
+    if (crossesIntoOpen && !cp.advance.satisfied) {
+      return cp.advance.reason === 'NO_ACCEPTED_QUOTE'
+        ? 'An advance is required but there is no accepted quote yet.'
+        : `Advance due: ${this.money(cp.advance.remaining)} of the ${this.money(cp.advance.required)} advance is still unpaid.`;
+    }
+    if (target === CaseStatus.CLOSED) {
+      if (cp.final.enforced && !cp.final.satisfied) {
+        return `Final payment outstanding: ${this.money(cp.final.remaining)} is still unpaid.`;
+      }
+      if (cp.delivery.enforced && !cp.delivery.satisfied) {
+        return `Only ${cp.delivery.delivered} of ${cp.delivery.total} milestones are marked delivered.`;
+      }
+      if (this.caseDetail.status === CaseStatus.RESOLUTION_PENDING) {
+        return 'The client has an open issue. Resolve it before closing the case.';
+      }
+      const closure = this.caseDetail.closure;
+      if (!closure?.requestedAt) {
+        return 'Request closure first, so the client can confirm or raise an issue.';
+      }
+      if (this.closureWindowOpen) {
+        return `The client has until ${new Date(closure.windowEndsAt as string).toLocaleString()} to confirm or raise an issue.`;
+      }
+    }
+    return null;
+  }
+
+  get selectedStageBlock(): string | null {
+    return this.stageBlockReason(this.newStatus);
+  }
+
+  openAdvanceOverride(): void {
+    const cp = this.checkpoints;
+    this.advanceOverrideOpen = true;
+    this.advanceMode = cp?.policy.mode ?? 'PERCENT';
+    this.advanceValue =
+      this.advanceMode === 'FIXED'
+        ? (cp?.policy.advanceAmount ?? 0) / 100
+        : (cp?.policy.advancePercent ?? 0);
+    this.advanceOverrideNote = '';
+    this.advanceArrangement = cp?.policy.arrangementNote ?? '';
+  }
+
+  saveAdvanceOverride(): void {
+    if (!this.caseDetail || this.advanceOverrideBusy) return;
+    const value = this.advanceValue;
+    if (value === null || Number.isNaN(Number(value))) {
+      this.toast.error('Enter the advance');
+      return;
+    }
+    if (this.advanceMode === 'PERCENT' && (!Number.isInteger(value) || value < 0 || value > 100)) {
+      this.toast.error('Enter a whole number from 0 to 100');
+      return;
+    }
+    if (this.advanceMode === 'FIXED' && value < 0) {
+      this.toast.error('The amount cannot be negative');
+      return;
+    }
+    if (!this.advanceOverrideNote.trim()) {
+      this.toast.error('Say what was agreed, so it is kept on the case');
+      return;
+    }
+    this.advanceOverrideBusy = true;
+    this.checkpointsService
+      .setCaseAdvance(this.caseDetail._id, {
+        mode: this.advanceMode,
+        ...(this.advanceMode === 'PERCENT'
+          ? { advancePercent: value }
+          : { advanceAmount: Math.round(Number(value) * 100) }),
+        note: this.advanceOverrideNote.trim(),
+        arrangementNote: this.advanceArrangement.trim() || undefined,
+      })
+      .subscribe({
+        next: (cp) => {
+          this.checkpoints = cp;
+          this.advanceOverrideBusy = false;
+          this.advanceOverrideOpen = false;
+          this.toast.success('Advance agreed and recorded');
+          if (this.caseDetail) {
+            // The case may have opened, or a payment request may have changed.
+            this.loadPayments(this.caseDetail._id);
+            this.api.get<CaseDetail>(`/cases/${this.caseDetail._id}`).subscribe({
+              next: (c) => {
+                this.mapVendorFromCase(c);
+                this.caseDetail = c;
+              },
+              error: () => undefined,
+            });
+          }
+        },
+        error: (err) => {
+          this.advanceOverrideBusy = false;
+          this.toast.error(extractApiError(err, 'Could not change the advance').message);
+        },
+      });
+  }
+
+  requestBalance(): void {
+    if (!this.caseDetail || this.requestingBalance) return;
+    this.requestingBalance = true;
+    this.checkpointsService.requestBalance(this.caseDetail._id).subscribe({
+      next: () => {
+        this.requestingBalance = false;
+        this.toast.success('Balance requested from the client');
+        if (this.caseDetail) this.loadPayments(this.caseDetail._id);
+      },
+      error: (err) => {
+        this.requestingBalance = false;
+        this.toast.error(extractApiError(err, 'Could not request the balance').message);
       },
     });
   }
@@ -3107,11 +3651,121 @@ export class CmCaseDetailComponent implements OnInit {
     this.cancelEditPayment();
     this.markPaidFormId = payment._id;
     this.markPaidReceiptFile = null;
+    this.offlineMethod = 'BANK_TRANSFER';
+    this.offlineReference = '';
+    this.offlineNote = '';
+    this.offlineFormError = '';
   }
 
   cancelMarkPaid(): void {
     this.markPaidFormId = null;
     this.markPaidReceiptFile = null;
+    this.offlineFormError = '';
+  }
+
+  paymentStatusText(status: CasePayment['status']): string {
+    switch (status) {
+      case 'pending_approval':
+        return 'Awaiting approval';
+      case 'captured':
+        return 'Paid';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  }
+
+  /** The payment that is already standing in for this milestone (requested, awaiting approval, or paid). */
+  milestonePayment(m: QuoteMilestone): CasePayment | undefined {
+    return this.casePayments.find(
+      (p) =>
+        p.direction === 'CLIENT_TO_CM' &&
+        !!m._id &&
+        p.milestoneId === m._id &&
+        ['pending', 'pending_approval', 'authorized', 'captured'].includes(p.status),
+    );
+  }
+
+  syncPaymentWithStripe(payment: CasePayment): void {
+    if (this.syncBusyId) return;
+    this.syncBusyId = payment._id;
+    this.paymentsService.syncWithStripe(payment._id).subscribe({
+      next: (updated) => {
+        this.syncBusyId = null;
+        this.casePayments = this.casePayments.map((p) => (p._id === payment._id ? updated : p));
+        this.toast.info(
+          updated.status === 'captured'
+            ? 'Stripe confirms this payment was received'
+            : 'Stripe has not received this payment yet',
+        );
+      },
+      error: (err) => {
+        this.syncBusyId = null;
+        this.toast.error(extractApiError(err, 'Could not check with Stripe').message);
+      },
+    });
+  }
+
+  async submitOfflinePayment(payment: CasePayment): Promise<void> {
+    if (this.markPaidBusyId || !this.caseDetail) return;
+    const note = this.offlineNote.trim();
+    const reference = this.offlineReference.trim();
+    if (!note) {
+      this.offlineFormError = 'Say why this payment was not made through Stripe.';
+      return;
+    }
+    if (this.offlineMethod !== 'CASH' && reference.length < 3) {
+      this.offlineFormError = 'Enter the payment reference (at least 3 characters).';
+      return;
+    }
+    this.offlineFormError = '';
+    this.markPaidBusyId = payment._id;
+
+    try {
+      let proofDocumentId: string | undefined;
+      const file = this.markPaidReceiptFile;
+      if (file) {
+        const { uploadUrl, documentId } = await firstValueFrom(
+          this.documentsService.requestUploadUrl({
+            caseId: this.caseDetail._id,
+            category: 'FINANCIAL',
+            name: `Off-platform payment proof: ${file.name}`,
+            originalFileName: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            sizeBytes: file.size,
+          }),
+        );
+        const res = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type || 'application/octet-stream' },
+          body: file,
+        });
+        if (!res.ok) throw new Error('Upload failed while sending file to storage');
+        await firstValueFrom(this.documentsService.confirmUpload(documentId));
+        proofDocumentId = documentId;
+      }
+
+      await firstValueFrom(
+        this.paymentsService.requestOfflinePayment({
+          caseId: this.caseDetail._id,
+          amountInPaise: payment.amountInPaise,
+          purpose: payment.purpose ?? 'FULL',
+          method: this.offlineMethod,
+          reference: reference || undefined,
+          description: payment.description || 'Payment received outside Stripe',
+          note,
+          proofDocumentId,
+          milestoneId: payment.milestoneId,
+          supersedesPaymentId: payment._id,
+        }),
+      );
+      this.markPaidBusyId = null;
+      this.cancelMarkPaid();
+      this.loadPayments(this.caseDetail._id);
+      this.toast.success('Sent to an Admin for approval');
+    } catch (err) {
+      this.markPaidBusyId = null;
+      this.toast.error(extractApiError(err, 'Could not record the payment').message);
+    }
   }
 
   onReceiptFileSelected(event: Event): void {
@@ -3201,6 +3855,7 @@ export class CmCaseDetailComponent implements OnInit {
       case 'authorized':
         return 'bb-chip-info';
       case 'failed':
+      case 'rejected':
         return 'bb-chip-danger';
       case 'refunded':
         return 'bb-chip-neutral';
@@ -3542,7 +4197,10 @@ export class CmCaseDetailComponent implements OnInit {
   }
 
   nextStageOptions(): { value: string; label: string }[] {
-    return this.nextStages.map((s) => ({ value: s, label: this.stageLabel(s) }));
+    return this.nextStages.map((s) => ({
+      value: s,
+      label: this.stageLabel(s) + (this.stageBlockReason(s) ? ' (not yet)' : ''),
+    }));
   }
 
   vendorServiceTypeOptions(): { value: string; label: string }[] {
@@ -3586,6 +4244,64 @@ export class CmCaseDetailComponent implements OnInit {
       });
   }
 
+  // ---------- Closure ----------
+  closeWindowHours = 168;
+  closingCase = false;
+
+  /** Asking the client to confirm is offered at QA review and Client Review, until it has been asked. */
+  get canRequestClosure(): boolean {
+    const c = this.caseDetail;
+    if (!c) return false;
+    return (
+      (c.status === CaseStatus.QA_REVIEW || c.status === CaseStatus.CLIENT_REVIEW) &&
+      !c.closure?.requestedAt
+    );
+  }
+
+  /** Still inside the client's window and not yet confirmed. */
+  get closureWindowOpen(): boolean {
+    const c = this.caseDetail?.closure;
+    if (!c?.requestedAt || c.clientConfirmedAt || !c.windowEndsAt) return false;
+    return new Date(c.windowEndsAt).getTime() > Date.now();
+  }
+
+  /** Payment or delivery still missing, before closure can be requested or the case closed. */
+  get closureReadinessBlock(): string | null {
+    const cp = this.checkpoints;
+    if (!cp) return null;
+    if (cp.final.enforced && !cp.final.satisfied) {
+      return `Final payment outstanding: ${this.money(cp.final.remaining)} is still unpaid.`;
+    }
+    if (cp.delivery.enforced && !cp.delivery.satisfied) {
+      return `Only ${cp.delivery.delivered} of ${cp.delivery.total} milestones are marked delivered.`;
+    }
+    return null;
+  }
+
+  closeCase(): void {
+    if (!this.caseDetail || this.closingCase) return;
+    this.closingCase = true;
+    this.api
+      .patch<CaseDetail>(`/cases/${this.caseDetail._id}/stage`, {
+        newStatus: CaseStatus.CLOSED,
+        note: 'Case closed by case manager',
+      })
+      .subscribe({
+        next: (updated) => {
+          this.mapVendorFromCase(updated);
+          this.caseDetail = updated;
+          this.newStatus = this.nextStages[0] ?? '';
+          this.closingCase = false;
+          this.toast.success('Case closed');
+          this.loadCheckpoints(updated._id);
+        },
+        error: (err) => {
+          this.closingCase = false;
+          this.toast.error(extractApiError(err, 'Could not close the case').message);
+        },
+      });
+  }
+
   // ---------- Close confirmation ----------
   requestCloseConfirmation(): void {
     if (!this.caseDetail || this.requestingCloseConfirmation) return;
@@ -3598,7 +4314,8 @@ export class CmCaseDetailComponent implements OnInit {
           this.caseDetail = updated;
           this.requestingCloseConfirmation = false;
           this.newStatus = this.nextStages[0] ?? '';
-          this.toast.success('Client notified to confirm case completion');
+          this.toast.success('Client notified. They can now confirm or raise an issue.');
+          this.loadCheckpoints(updated._id);
         },
         error: (err) => {
           this.requestingCloseConfirmation = false;
@@ -3676,18 +4393,20 @@ export class CmCaseDetailComponent implements OnInit {
     }
   }
 
-  markMilestonePaid(q: Quote, m: QuoteMilestone): void {
+  requestMilestonePayment(q: Quote, m: QuoteMilestone): void {
     if (!m._id || this.milestoneBusyId) return;
     this.milestoneBusyId = m._id;
-    this.api.patch<Quote>(`/quotes/${q._id}/milestones/${m._id}/mark-paid`, {}).subscribe({
-      next: (updated) => {
+    this.paymentsService.requestMilestonePayment(q._id, m._id).subscribe({
+      next: (payment) => {
         this.milestoneBusyId = null;
-        this.quotes = this.quotes.map((qq) => (qq._id === q._id ? updated : qq));
-        this.toast.success('Milestone marked as paid');
+        if (!this.casePayments.some((p) => p._id === payment._id)) {
+          this.casePayments = [payment, ...this.casePayments];
+        }
+        this.toast.success('Payment requested from the client');
       },
       error: (err) => {
         this.milestoneBusyId = null;
-        this.toast.error(extractApiError(err, 'Failed to mark milestone paid').message);
+        this.toast.error(extractApiError(err, 'Failed to request payment').message);
       },
     });
   }
@@ -4157,10 +4876,13 @@ export class CmCaseDetailComponent implements OnInit {
           this.newStatus = this.nextStages[0] ?? '';
           this.transitioning = false;
           this.toast.success('Stage updated successfully');
+          this.loadCheckpoints(updated._id);
         },
-        error: () => {
+        error: (err) => {
           this.transitioning = false;
-          this.toast.error('Failed to update stage');
+          // The server explains exactly what is outstanding (advance, final payment, delivery).
+          this.toast.error(extractApiError(err, 'Failed to update stage').message);
+          if (this.caseDetail) this.loadCheckpoints(this.caseDetail._id);
         },
       });
   }
@@ -4215,6 +4937,8 @@ export class CmCaseDetailComponent implements OnInit {
         return 'bb-chip-info';
       case CaseStatus.CLIENT_REVIEW:
         return 'bb-chip-info';
+      case CaseStatus.RESOLUTION_PENDING:
+        return 'bb-chip-danger';
       case CaseStatus.CLOSED:
         return 'bb-chip-neutral';
       default:

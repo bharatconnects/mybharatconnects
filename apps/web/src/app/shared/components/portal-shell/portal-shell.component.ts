@@ -108,6 +108,15 @@ const ROLE_BADGE: Record<string, string> = {
               </div>
             }
 
+            <a
+              routerLink="/"
+              class="bb-btn bb-btn-ghost bb-btn-icon"
+              aria-label="Visit website"
+              title="Visit website"
+            >
+              <i class="material-icons-outlined">language</i>
+            </a>
+
             <button
               type="button"
               class="bb-btn bb-btn-danger bb-btn-icon"

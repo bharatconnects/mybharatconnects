@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { ServiceType } from '../schemas/lead.schema';
 import { Cluster } from '../../../common/enums/cluster.enum';
+import { IsPhone } from '../../../common/validators/is-phone.validator';
 
 export class CreateLeadDto {
   @IsString()
@@ -16,7 +17,7 @@ export class CreateLeadDto {
   @IsEmail()
   email: string;
 
-  @IsString()
+  @IsPhone()
   @IsOptional()
   phone?: string;
 

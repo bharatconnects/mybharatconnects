@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Case, CaseSchema } from '../cases/schemas/case.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
+import { Lead, LeadSchema } from '../leads/schemas/lead.schema';
 import { FeedbackController } from './feedback.controller';
 import { FeedbackService } from './feedback.service';
 import { Rating, RatingSchema } from './schemas/rating.schema';
@@ -14,6 +16,8 @@ import { Complaint, ComplaintSchema } from './schemas/complaint.schema';
       { name: Testimonial.name, schema: TestimonialSchema },
       { name: Complaint.name, schema: ComplaintSchema },
       { name: Case.name, schema: CaseSchema },
+      { name: User.name, schema: UserSchema },
+      { name: Lead.name, schema: LeadSchema },
     ]),
   ],
   controllers: [FeedbackController],

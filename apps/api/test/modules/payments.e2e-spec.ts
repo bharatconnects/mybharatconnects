@@ -108,7 +108,7 @@ describe('Payments role matrix (e2e)', () => {
         .expect(403);
     });
 
-    it('owning CM requests a token payment, then CM/OPS_FINANCE marks it paid with a receipt', async () => {
+    it('owning CM requests a token payment, but nobody can mark a client payment paid by hand', async () => {
       const { cm, client, caseDoc } = await seedOwnedCase();
       const { accessToken: cmToken } = getTokens(ctx.app, cm);
 
@@ -132,25 +132,29 @@ describe('Payments role matrix (e2e)', () => {
       expect(reqBody.status).toBe('PENDING');
       expect(reqBody.purpose).toBe('TOKEN');
 
-      const payRes = await request(ctx.app.getHttpServer())
-        .post(`/api/payments/${reqBody._id}/mark-paid`)
-        .set('Authorization', bearer(cmToken))
-        .send({ receiptDocumentId: new Types.ObjectId().toString() })
-        .expect(201);
+      // CM, finance and Admin are all refused: client money is confirmed by
+      // Stripe, or by an Admin-approved off-platform request.
+      const ops = await seedUser(ctx.app, Role.OPS_FINANCE);
+      const admin = await seedUser(ctx.app, Role.ADMIN);
+      for (const token of [
+        cmToken,
+        getTokens(ctx.app, ops).accessToken,
+        getTokens(ctx.app, admin).accessToken,
+      ]) {
+        await request(ctx.app.getHttpServer())
+          .post(`/api/payments/${reqBody._id}/mark-paid`)
+          .set('Authorization', bearer(token))
+          .send({ receiptDocumentId: new Types.ObjectId().toString() })
+          .expect(403);
+      }
 
-      const payBody = (payRes.body.data ?? payRes.body) as {
-        status: string;
-        receiptDocumentId?: string;
-      };
-      expect(payBody.status).toBe('CAPTURED');
-      expect(payBody.receiptDocumentId).toBeDefined();
-
-      // Already captured — a second mark-paid call must be rejected.
-      await request(ctx.app.getHttpServer())
-        .post(`/api/payments/${reqBody._id}/mark-paid`)
+      // Still waiting on the client.
+      const after = await request(ctx.app.getHttpServer())
+        .get(`/api/payments/case/${(caseDoc._id as Types.ObjectId).toString()}`)
         .set('Authorization', bearer(cmToken))
-        .send({})
-        .expect(400);
+        .expect(200);
+      const list = (after.body.data ?? after.body) as { status: string }[];
+      expect(list.map((p) => p.status)).toEqual(['PENDING']);
     });
   });
 });

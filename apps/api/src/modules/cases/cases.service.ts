@@ -27,7 +27,22 @@ import {
   ActionItemDocument,
 } from '../action-items/schemas/action-item.schema';
 import { Lead, LeadDocument } from '../leads/schemas/lead.schema';
-import { CaseStatus } from '../../common/enums/case-status.enum';
+import {
+  ACTIVE_CASE_STATUSES,
+  CASE_STAGE_ORDER,
+  CaseStatus,
+  caseStageIndex,
+} from '../../common/enums/case-status.enum';
+import { DisputesService } from '../disputes/disputes.service';
+import { DisputeEvents } from '../disputes/dispute-events';
+import type { DisputeClosedPayload } from '../disputes/dispute-events';
+import { DisputeType } from '../disputes/schemas/dispute.schema';
+import { RaiseIssueDto } from './dto/raise-issue.dto';
+import { SetCasePaymentPolicyDto } from './dto/set-case-payment-policy.dto';
+import { CaseCheckpointsService } from './case-checkpoints.service';
+import type { CaseCheckpoints } from './case-checkpoints.service';
+import { SettingsService } from '../settings/settings.service';
+import { PaymentsService } from '../payments/payments.service';
 import { Role } from '../../common/enums/roles.enum';
 import { CaseEvents } from '../../common/events/case-events';
 import type { CaseEventPayload } from '../../common/events/case-events';
@@ -94,6 +109,10 @@ export class CasesService {
     private readonly s3Service: S3Service,
     private readonly events: EventEmitter2,
     private readonly emailService: EmailService,
+    private readonly checkpoints: CaseCheckpointsService,
+    private readonly settings: SettingsService,
+    private readonly paymentsService: PaymentsService,
+    private readonly disputes: DisputesService,
   ) {}
 
   /** Lightweight existence check — used by LeadsService to detect a lead's
@@ -190,12 +209,31 @@ export class CasesService {
 
   @OnEvent(CaseEvents.QUOTE_ACCEPTED)
   async handleQuoteAccepted(payload: CaseEventPayload): Promise<void> {
-    await this.autoTransition(
-      payload,
-      CaseStatus.CASE_OPEN,
-      CaseEvents.QUOTE_ACCEPTED,
-      CaseStatus.QUOTE_SENT,
-    );
+    // With no advance required (the default) this is exactly the original
+    // behaviour: accepting the quote opens the case. With an advance, the case
+    // waits at Quote Sent and the client is asked to pay it; the payment
+    // opens the case (handlePaymentCaptured).
+    try {
+      await this.snapshotPaymentPolicy(payload.caseId);
+      const quoteId =
+        typeof payload.metadata?.quoteId === 'string' ? payload.metadata.quoteId : undefined;
+      const cp = await this.checkpoints.getCheckpoints(payload.caseId, { quoteId });
+      if (cp.advance.satisfied) {
+        await this.autoTransition(
+          payload,
+          CaseStatus.CASE_OPEN,
+          CaseEvents.QUOTE_ACCEPTED,
+          CaseStatus.QUOTE_SENT,
+        );
+      } else {
+        await this.requestAdvancePayment(payload.caseId, cp);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      this.logger.error(
+        `[${CaseEvents.QUOTE_ACCEPTED}] advance handling failed for case ${payload.caseId}: ${msg}`,
+      );
+    }
 
     const vendorId = payload.metadata?.vendorId;
     if (typeof vendorId !== 'string' || !Types.ObjectId.isValid(vendorId)) {
@@ -222,12 +260,566 @@ export class CasesService {
 
   @OnEvent(CaseEvents.PAYMENT_CAPTURED)
   async handlePaymentCaptured(payload: CaseEventPayload): Promise<void> {
-    await this.autoTransition(
-      payload,
-      CaseStatus.VENDOR_WORKING,
-      CaseEvents.PAYMENT_CAPTURED,
-      CaseStatus.CASE_OPEN,
+    try {
+      const caseDoc = await this.caseModel.findById(payload.caseId).exec();
+      if (!caseDoc) return;
+
+      if (caseDoc.status === CaseStatus.QUOTE_SENT) {
+        // The advance opens the case, but only once it has been paid in full.
+        // A part payment, or any payment when no advance is required, leaves
+        // the case where it is.
+        const cp = await this.checkpoints.getCheckpoints(caseDoc);
+        if (cp.hasAcceptedQuote && cp.advance.required > 0 && cp.advance.satisfied) {
+          await this.autoTransition(
+            payload,
+            CaseStatus.CASE_OPEN,
+            `${CaseEvents.PAYMENT_CAPTURED} (advance received)`,
+            CaseStatus.QUOTE_SENT,
+          );
+        }
+        return;
+      }
+
+      // Original rule, kept for the default 0% advance: the first payment on
+      // an open case sets the vendor to work. When an advance is required,
+      // the advance itself opened the case and the CM starts the work.
+      if (caseDoc.status === CaseStatus.CASE_OPEN) {
+        const cp = await this.checkpoints.getCheckpoints(caseDoc);
+        if (!cp.policy.advanceConfigured) {
+          await this.autoTransition(
+            payload,
+            CaseStatus.VENDOR_WORKING,
+            CaseEvents.PAYMENT_CAPTURED,
+            CaseStatus.CASE_OPEN,
+          );
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      this.logger.error(
+        `[${CaseEvents.PAYMENT_CAPTURED}] stage handling failed for case ${payload.caseId}: ${msg}`,
+      );
+    }
+  }
+
+  /** Records the advance rule that applies to this case the first time it is needed. */
+  private async snapshotPaymentPolicy(caseId: string): Promise<void> {
+    const policy = await this.settings.getPaymentPolicy();
+    await this.caseModel
+      .updateOne(
+        { _id: caseId, paymentPolicy: { $exists: false } },
+        {
+          $set: {
+            paymentPolicy: {
+              mode: 'PERCENT',
+              advancePercent: policy.advancePercent,
+              source: 'SETTINGS',
+              setAt: new Date(),
+              history: [],
+            },
+          },
+        },
+      )
+      .exec();
+  }
+
+  private async requestAdvancePayment(caseId: string, cp: CaseCheckpoints): Promise<void> {
+    if (cp.advance.remaining <= 0) return;
+    const caseDoc = await this.caseModel.findById(caseId).select('clientId caseNumber').exec();
+    if (!caseDoc) return;
+    await this.paymentsService.createAdvanceRequest({
+      caseId,
+      clientId: caseDoc.clientId.toString(),
+      quoteId: cp.quoteId ?? undefined,
+      amountInPaise: cp.advance.remaining,
+      description: `Advance payment to open case ${caseDoc.caseNumber}`,
+    });
+  }
+
+  /** Checkpoint status for a case the caller is allowed to see. */
+  async getCheckpointsFor(
+    id: string,
+    actor: { userId: string; role: Role | string },
+  ): Promise<CaseCheckpoints> {
+    const caseDoc = await this.findById(id, actor);
+    const cp = await this.checkpoints.getCheckpoints((caseDoc._id as Types.ObjectId).toString());
+    // The audit trail holds staff's internal reasons; the client sees only the
+    // terms that apply to them and what was agreed about the rest.
+    if (actor.role === Role.CLIENT) {
+      cp.policy.history = [];
+    }
+    return cp;
+  }
+
+  /**
+   * Change the advance for one case after talking to the client: a percentage
+   * of the quote or a fixed amount, with the reason and anything agreed about
+   * paying the rest. The case manager of the case or an Admin can do it; the
+   * advance checkpoint itself still applies afterwards. Every change is kept
+   * in the case's audit trail (and as a case note).
+   */
+  async setPaymentPolicy(
+    id: string,
+    dto: SetCasePaymentPolicyDto,
+    actor: { userId: string; role: Role | string },
+  ): Promise<CaseCheckpoints> {
+    const caseDoc = await this.findById(id, actor);
+    const caseId = (caseDoc._id as Types.ObjectId).toString();
+    await this.assertCaseManagerOwnsCase(caseId, actor.role, actor.userId);
+    if (caseDoc.status === CaseStatus.CLOSED) {
+      throw new BadRequestException('This case is closed, so its advance can no longer change.');
+    }
+
+    const before = await this.checkpoints.getCheckpoints(caseId);
+    if (dto.mode === 'FIXED' && before.hasAcceptedQuote && (dto.advanceAmount ?? 0) > before.contractTotal) {
+      throw new BadRequestException(
+        `A fixed advance cannot be more than the accepted quote (${this.money(before, before.contractTotal)}).`,
+      );
+    }
+
+    const to =
+      dto.mode === 'FIXED'
+        ? { mode: 'FIXED' as const, advancePercent: 0, advanceAmount: dto.advanceAmount ?? 0 }
+        : { mode: 'PERCENT' as const, advancePercent: dto.advancePercent ?? 0 };
+    const from = {
+      mode: before.policy.mode,
+      advancePercent: before.policy.advancePercent,
+      ...(before.policy.advanceAmount !== null ? { advanceAmount: before.policy.advanceAmount } : {}),
+    };
+    const unchanged =
+      from.mode === to.mode &&
+      from.advancePercent === to.advancePercent &&
+      (from.advanceAmount ?? 0) === ((to as { advanceAmount?: number }).advanceAmount ?? 0) &&
+      (before.policy.arrangementNote ?? '') === (dto.arrangementNote ?? before.policy.arrangementNote ?? '');
+    if (unchanged) {
+      throw new BadRequestException('That is already the advance for this case.');
+    }
+
+    const now = new Date();
+    const describe = (t: { mode: string; advancePercent: number; advanceAmount?: number }) =>
+      t.mode === 'FIXED'
+        ? `a fixed ${this.money(before, t.advanceAmount ?? 0)}`
+        : `${t.advancePercent}% of the quote`;
+    const set: Record<string, unknown> = {
+      'paymentPolicy.mode': to.mode,
+      'paymentPolicy.advancePercent': to.advancePercent,
+      'paymentPolicy.source': 'ADJUSTED',
+      'paymentPolicy.setAt': now,
+      'paymentPolicy.setBy': new Types.ObjectId(actor.userId),
+      'paymentPolicy.note': dto.note,
+    };
+    const unset: Record<string, ''> = {};
+    if (to.mode === 'FIXED') set['paymentPolicy.advanceAmount'] = (to as { advanceAmount: number }).advanceAmount;
+    else unset['paymentPolicy.advanceAmount'] = '';
+    if (dto.arrangementNote !== undefined) set['paymentPolicy.arrangementNote'] = dto.arrangementNote;
+
+    await this.caseModel
+      .updateOne(
+        { _id: caseId },
+        {
+          $set: set,
+          ...(Object.keys(unset).length ? { $unset: unset } : {}),
+          $push: {
+            'paymentPolicy.history': {
+              at: now,
+              by: new Types.ObjectId(actor.userId),
+              byRole: actor.role,
+              from,
+              to,
+              note: dto.note,
+              arrangementNote: dto.arrangementNote,
+            },
+            notes: {
+              author: new Types.ObjectId(actor.userId),
+              text: `Advance for this case changed from ${describe(from)} to ${describe(to)}. Reason: ${dto.note}${dto.arrangementNote ? `. Agreed for the rest: ${dto.arrangementNote}` : ''}`,
+              createdAt: now,
+            },
+          },
+        },
+      )
+      .exec();
+
+    // What the client owes now may have changed under an already-accepted
+    // quote: ask for the new amount, or open the case if nothing is owed.
+    try {
+      const after = await this.checkpoints.getCheckpoints(caseId);
+      if (caseDoc.status === CaseStatus.QUOTE_SENT && after.hasAcceptedQuote) {
+        if (after.advance.satisfied) {
+          await this.paymentsService.withdrawOpenAdvanceRequests(caseId, actor);
+          await this.transitionStage(
+            caseId,
+            CaseStatus.CASE_OPEN,
+            actor.userId,
+            'Advance terms agreed: nothing further is due before the case opens',
+            actor.role,
+          );
+        } else {
+          await this.requestAdvancePayment(caseId, after);
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      this.logger.error(`Advance terms saved but follow-up failed for case ${caseId}: ${msg}`);
+    }
+
+    return this.getCheckpointsFor(caseId, actor);
+  }
+
+  /**
+   * Asks the client for whatever part of the accepted quote has not been paid
+   * and is not already being asked for. Used when milestones do not add up to
+   * the quoted total, or the CM agreed a different arrangement.
+   */
+  async requestBalance(
+    id: string,
+    actor: { userId: string; role: Role | string },
+  ): Promise<unknown> {
+    await this.assertCaseManagerOwnsCase(id, actor.role, actor.userId);
+    const cp = await this.checkpoints.getCheckpoints(id);
+    if (!cp.hasAcceptedQuote) {
+      throw new BadRequestException('There is no accepted quote on this case to take a balance from.');
+    }
+    if (cp.final.unrequested <= 0) {
+      throw new BadRequestException(
+        cp.final.remaining > 0
+          ? 'The rest of the quote has already been requested from the client.'
+          : 'The quote is already paid in full.',
+      );
+    }
+    const caseDoc = await this.caseModel.findById(id).select('clientId caseNumber').exec();
+    if (!caseDoc) throw new NotFoundException(`Case ${id} not found`);
+    return this.paymentsService.requestPayment(
+      actor.userId,
+      {
+        caseId: id,
+        clientId: caseDoc.clientId.toString(),
+        amountInPaise: cp.final.unrequested,
+        purpose: 'FULL',
+        description: `Remaining balance for case ${caseDoc.caseNumber}`,
+        quoteId: cp.quoteId ?? undefined,
+      },
+      actor.role,
     );
+  }
+
+  /**
+   * Leads whose case has reached Case Open (or later) are active cases now,
+   * not leads. Computed on every read, so a case moved back below Case Open
+   * brings its lead back.
+   */
+  async findLeadIdsPastLeadStage(): Promise<Types.ObjectId[]> {
+    const rows = await this.caseModel
+      .find({ leadId: { $exists: true, $ne: null }, status: { $in: ACTIVE_CASE_STATUSES } })
+      .select('leadId')
+      .lean()
+      .exec();
+    return rows.map((r) => r.leadId as Types.ObjectId);
+  }
+
+  private money(cp: CaseCheckpoints, minor: number): string {
+    return `${cp.currency ?? ''} ${(minor / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`.trim();
+  }
+
+  /** Full payment received and every milestone delivered, or a message saying what is missing. */
+  private assertClosureChecks(cp: CaseCheckpoints): void {
+    if (cp.final.enforced && !cp.final.satisfied) {
+      throw new BadRequestException(
+        `Final payment outstanding: ${this.money(cp, cp.final.remaining)} of the accepted quote (${this.money(cp, cp.final.required)}) is still unpaid, so the case cannot be closed.`,
+      );
+    }
+    if (cp.delivery.enforced && !cp.delivery.satisfied) {
+      throw new BadRequestException(
+        `The case cannot be closed yet: ${cp.delivery.delivered} of ${cp.delivery.total} milestones are marked delivered.`,
+      );
+    }
+  }
+
+  /**
+   * Rules a stage change must satisfy. Applies to every caller (CM, Admin,
+   * the client's confirm and the automatic transitions), so there is no route
+   * around it. Returns the checkpoints it read when the case is being closed,
+   * so the closure record can store exactly what was verified.
+   *  - Reaching Case Open or later from an earlier stage needs the advance.
+   *  - Resolution pending needs an open issue to wait on.
+   *  - Closing needs: no open issue, closure requested and the client's window
+   *    over (or the client confirmed), the full amount paid, and every
+   *    milestone delivered.
+   * Moving backward is always allowed.
+   */
+  private async assertCheckpointsAllow(
+    caseDoc: CaseDocument,
+    newStatus: CaseStatus,
+  ): Promise<CaseCheckpoints | null> {
+    const caseId = (caseDoc._id as Types.ObjectId).toString();
+
+    if (newStatus === CaseStatus.RESOLUTION_PENDING) {
+      if ((await this.disputes.countOpenForCase(caseId)) === 0) {
+        throw new BadRequestException(
+          'Resolution pending needs an open issue on the case. Ask the client to raise one, or create a dispute first.',
+        );
+      }
+      return null;
+    }
+
+    const openIdx = CASE_STAGE_ORDER.indexOf(CaseStatus.CASE_OPEN);
+    const crossesIntoOpen =
+      caseStageIndex(newStatus) >= openIdx && caseStageIndex(caseDoc.status) < openIdx;
+    const closing = newStatus === CaseStatus.CLOSED;
+    if (!crossesIntoOpen && !closing) return null;
+
+    const cp = await this.checkpoints.getCheckpoints(caseDoc);
+
+    if (crossesIntoOpen && !cp.advance.satisfied) {
+      if (cp.advance.reason === 'NO_ACCEPTED_QUOTE') {
+        throw new BadRequestException(
+          `An advance is required before Case Open, but this case has no accepted quote to take it from.`,
+        );
+      }
+      throw new BadRequestException(
+        `Advance payment required before Case Open: ${this.money(cp, cp.advance.required)}${cp.advance.mode === 'PERCENT' ? ` (${cp.advance.percent}% of the accepted quote)` : ''}. Received ${this.money(cp, cp.paid)}, ${this.money(cp, cp.advance.remaining)} still to pay.`,
+      );
+    }
+
+    if (!closing) return null;
+
+    if (
+      caseDoc.status === CaseStatus.RESOLUTION_PENDING ||
+      (await this.disputes.countOpenForCase(caseId)) > 0
+    ) {
+      throw new BadRequestException(
+        'This case has an open issue, so it cannot be closed until the issue is resolved.',
+      );
+    }
+
+    // What is owed and what is delivered comes first: it is the most useful
+    // thing to tell a CM who is trying to close.
+    this.assertClosureChecks(cp);
+
+    const closure = caseDoc.closure;
+    if (!closure?.requestedAt) {
+      throw new BadRequestException(
+        'Request closure first, so the client is told the work is complete and can raise an issue before the case is closed.',
+      );
+    }
+    if (
+      !closure.clientConfirmedAt &&
+      closure.windowEndsAt &&
+      closure.windowEndsAt.getTime() > Date.now()
+    ) {
+      throw new BadRequestException(
+        `The client has until ${closure.windowEndsAt.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} to confirm or raise an issue. The case can be closed after that.`,
+      );
+    }
+
+    return cp;
+  }
+
+  /**
+   * The CM (or an Admin) tells the client the work is complete. Final payment
+   * and delivery are checked now, then the client is emailed and has the
+   * configured window to confirm early or raise an issue. The case moves to
+   * Client Review and can be closed once the window is over.
+   */
+  async requestClosure(
+    id: string,
+    actor: { userId: string; role: Role | string },
+  ): Promise<CaseDocument> {
+    await this.assertCaseManagerOwnsCase(id, actor.role, actor.userId);
+    const caseDoc = await this.caseModel.findById(id).exec();
+    if (!caseDoc) {
+      throw new NotFoundException(`Case ${id} not found`);
+    }
+    if (caseDoc.status === CaseStatus.CLOSED) {
+      throw new BadRequestException('This case is already closed.');
+    }
+    if (
+      caseDoc.status === CaseStatus.RESOLUTION_PENDING ||
+      (await this.disputes.countOpenForCase(id)) > 0
+    ) {
+      throw new BadRequestException('Resolve the open issue before requesting closure.');
+    }
+
+    const existing = caseDoc.closure;
+    if (
+      caseDoc.status === CaseStatus.CLIENT_REVIEW &&
+      existing?.requestedAt &&
+      !existing.closedAt &&
+      !existing.issueRaisedAt
+    ) {
+      return caseDoc; // already requested; do not email the client twice
+    }
+
+    const cp = await this.checkpoints.getCheckpoints(caseDoc);
+    this.assertClosureChecks(cp);
+
+    const policy = await this.settings.getPaymentPolicy();
+    const now = new Date();
+    await this.caseModel
+      .updateOne(
+        { _id: caseDoc._id },
+        {
+          $set: {
+            closure: {
+              requestedBy: new Types.ObjectId(actor.userId),
+              requestedAt: now,
+              windowEndsAt: new Date(now.getTime() + policy.closeWindowHours * 3_600_000),
+              payment: { paid: cp.paid, total: cp.contractTotal, currency: cp.currency },
+              delivery: { delivered: cp.delivery.delivered, total: cp.delivery.total },
+            },
+          },
+        },
+      )
+      .exec();
+
+    if (caseDoc.status !== CaseStatus.CLIENT_REVIEW) {
+      // Arriving at Client Review emails the client; the listener sees the
+      // closure just written and sends the notice with the deadline.
+      return this.transitionStage(
+        id,
+        CaseStatus.CLIENT_REVIEW,
+        actor.userId,
+        `Closure requested. The client has ${policy.closeWindowHours} hours to confirm or raise an issue.`,
+        actor.role,
+      );
+    }
+    this.events.emit(CaseEvents.CLOSE_CONFIRMATION_REQUESTED, {
+      caseId: id,
+      actorUserId: actor.userId,
+    } satisfies CaseEventPayload);
+    return (await this.caseModel.findById(id).exec()) as CaseDocument;
+  }
+
+  /**
+   * The client's early "yes, close it". Optional: the case also closes on its
+   * own terms once the window is over. Payment and delivery are still checked.
+   */
+  async confirmClosure(
+    id: string,
+    client: { userId: string; role: Role | string },
+  ): Promise<CaseDocument> {
+    const caseDoc = await this.findById(id, client);
+    const caseId = (caseDoc._id as Types.ObjectId).toString();
+    if (caseDoc.status === CaseStatus.CLOSED) {
+      throw new BadRequestException('This case is already closed.');
+    }
+    if (caseDoc.status !== CaseStatus.CLIENT_REVIEW) {
+      throw new BadRequestException(
+        caseDoc.status === CaseStatus.RESOLUTION_PENDING
+          ? 'You have an open issue on this case. It can be closed once the issue is resolved.'
+          : 'This case is not ready to be closed yet.',
+      );
+    }
+
+    this.assertClosureChecks(await this.checkpoints.getCheckpoints(caseId));
+
+    const now = new Date();
+    const set: Record<string, unknown> = { 'closure.clientConfirmedAt': now };
+    if (!caseDoc.closure?.requestedAt) {
+      // The case reached Client Review through QA before the CM formally
+      // requested closure; the client's confirmation stands in for the request.
+      set['closure.requestedAt'] = now;
+      set['closure.requestedBy'] = new Types.ObjectId(client.userId);
+      set['closure.windowEndsAt'] = now;
+    }
+    await this.caseModel.updateOne({ _id: caseId }, { $set: set }).exec();
+
+    return this.transitionStage(caseId, CaseStatus.CLOSED, client.userId, 'Client confirmed case completion');
+  }
+
+  /**
+   * The client is not satisfied. Instead of closing, an issue (a dispute) is
+   * opened and the case waits in Resolution pending until it is settled.
+   */
+  async raiseIssue(
+    id: string,
+    client: { userId: string; role: Role | string },
+    dto: RaiseIssueDto,
+  ): Promise<CaseDocument> {
+    const caseDoc = await this.findById(id, client);
+    const caseId = (caseDoc._id as Types.ObjectId).toString();
+    if (caseDoc.status === CaseStatus.CLOSED) {
+      throw new BadRequestException(
+        'This case is already closed. Please contact support to report a problem.',
+      );
+    }
+    if (caseDoc.status === CaseStatus.RESOLUTION_PENDING) {
+      throw new BadRequestException('You have already raised an issue on this case.');
+    }
+    if (caseDoc.status !== CaseStatus.CLIENT_REVIEW) {
+      throw new BadRequestException(
+        'You can raise an issue once your case manager has marked the work complete.',
+      );
+    }
+
+    const dispute = await this.disputes.create(
+      {
+        caseId,
+        type: dto.type ?? DisputeType.DELIVERABLE,
+        description: dto.description,
+        evidenceDocumentIds: dto.evidenceDocumentIds,
+      },
+      client.userId,
+      Role.CLIENT,
+    );
+    await this.caseModel
+      .updateOne(
+        { _id: caseId },
+        {
+          $set: {
+            'closure.issueRaisedAt': new Date(),
+            'closure.issueDisputeId': dispute._id,
+          },
+        },
+      )
+      .exec();
+
+    const updated = await this.transitionStage(
+      caseId,
+      CaseStatus.RESOLUTION_PENDING,
+      client.userId,
+      'Client raised an issue before closure',
+    );
+    this.events.emit(CaseEvents.ISSUE_RAISED, {
+      caseId,
+      actorUserId: client.userId,
+      metadata: { disputeId: (dispute._id as Types.ObjectId).toString(), description: dto.description },
+    } satisfies CaseEventPayload);
+    return updated;
+  }
+
+  // When the last open issue on a Resolution-pending case is settled, the
+  // case goes back to Client Review. The earlier closure request is cleared,
+  // so the CM has to request closure again and the client gets a fresh window.
+  @OnEvent(DisputeEvents.CLOSED)
+  async handleDisputeClosed(payload: DisputeClosedPayload): Promise<void> {
+    try {
+      const caseDoc = await this.caseModel.findById(payload.caseId).exec();
+      if (!caseDoc || caseDoc.status !== CaseStatus.RESOLUTION_PENDING) return;
+      if ((await this.disputes.countOpenForCase(payload.caseId)) > 0) return;
+
+      await this.caseModel
+        .updateOne(
+          { _id: caseDoc._id },
+          {
+            $unset: {
+              'closure.requestedAt': '',
+              'closure.windowEndsAt': '',
+              'closure.clientConfirmedAt': '',
+            },
+            $set: { 'closure.issueResolvedAt': new Date() },
+          },
+        )
+        .exec();
+      await this.transitionStage(
+        payload.caseId,
+        CaseStatus.CLIENT_REVIEW,
+        'system',
+        'The client issue was resolved. Closure can be requested again.',
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      this.logger.error(`[${DisputeEvents.CLOSED}] could not return case ${payload.caseId} to review: ${msg}`);
+    }
   }
 
   @OnEvent(CaseEvents.DOCUMENTS_VERIFIED)
@@ -246,16 +838,20 @@ export class CasesService {
       payload,
       CaseStatus.CLIENT_REVIEW,
       CaseEvents.QA_APPROVED,
+      CaseStatus.QA_REVIEW,
     );
   }
 
   @OnEvent(CaseEvents.QA_REJECTED)
   async handleQaRejected(payload: CaseEventPayload): Promise<void> {
-    await this.autoTransition(
-      payload,
-      CaseStatus.VENDOR_WORKING,
-      CaseEvents.QA_REJECTED,
-    );
+    // A client-documents review that fails goes back to the client's side of
+    // the work (Document Collection); a vendor-deliverables one goes back to
+    // the vendor, as it always did.
+    const target =
+      payload.metadata?.reviewType === 'CLIENT_DOCUMENTS'
+        ? CaseStatus.DOCUMENT_COLLECTION
+        : CaseStatus.VENDOR_WORKING;
+    await this.autoTransition(payload, target, CaseEvents.QA_REJECTED, CaseStatus.QA_REVIEW);
   }
 
   private async generateCaseNumber(): Promise<string> {
@@ -475,6 +1071,8 @@ export class CasesService {
       );
     }
 
+    const verified = await this.assertCheckpointsAllow(caseDoc, newStatus);
+
     const now = new Date();
     const timelineField = STATUS_TIMELINE_MAP[newStatus];
     const timelineUpdate: Record<string, Date> = {};
@@ -487,6 +1085,32 @@ export class CasesService {
       ? new Types.ObjectId(changedByUserId)
       : new Types.ObjectId();
 
+    // Closing stores what was verified at that moment (payment, delivery, who
+    // and how), so the closure can be audited later.
+    const closureUpdate: Record<string, unknown> =
+      newStatus === CaseStatus.CLOSED
+        ? {
+            'closure.closedAt': now,
+            'closure.closedBy': changedBy,
+            'closure.closedVia': caseDoc.closure?.clientConfirmedAt
+              ? 'CLIENT_CONFIRMED'
+              : 'WINDOW_ELAPSED',
+            ...(verified
+              ? {
+                  'closure.payment': {
+                    paid: verified.paid,
+                    total: verified.contractTotal,
+                    currency: verified.currency,
+                  },
+                  'closure.delivery': {
+                    delivered: verified.delivery.delivered,
+                    total: verified.delivery.total,
+                  },
+                }
+              : {}),
+          }
+        : {};
+
     const updated = await this.caseModel
       .findByIdAndUpdate(
         caseId,
@@ -494,6 +1118,7 @@ export class CasesService {
           $set: {
             status: newStatus,
             ...timelineUpdate,
+            ...closureUpdate,
           },
           $push: {
             stageHistory: {
@@ -529,7 +1154,19 @@ export class CasesService {
       }
     }
 
-    if (newStatus === CaseStatus.CLIENT_REVIEW) {
+    if (newStatus === CaseStatus.QA_REVIEW) {
+      try {
+        this.events.emit(CaseEvents.QA_REVIEW_STARTED, {
+          caseId: (updated._id as Types.ObjectId).toString(),
+          actorUserId: changedByUserId,
+        } satisfies CaseEventPayload);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'unknown error';
+        this.logger.error(`[QA_REVIEW_STARTED] failed to emit for case ${caseId}: ${msg}`);
+      }
+    }
+
+    if (newStatus === CaseStatus.CLIENT_REVIEW && caseDoc.status !== CaseStatus.RESOLUTION_PENDING) {
       try {
         const payload: CaseEventPayload = {
           caseId: (updated._id as Types.ObjectId).toString(),

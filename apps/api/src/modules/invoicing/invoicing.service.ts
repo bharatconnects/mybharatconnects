@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -9,6 +10,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Role } from '../../common/enums/roles.enum';
 import { Case, CaseDocument } from '../cases/schemas/case.schema';
+import { Payment, PaymentDocument } from '../payments/schemas/payment.schema';
 import {
   Counter,
   CounterDocument,
@@ -40,6 +42,8 @@ export class InvoicingService {
     private readonly counterModel: Model<CounterDocument>,
     @InjectModel(Case.name)
     private readonly caseModel: Model<CaseDocument>,
+    @InjectModel(Payment.name)
+    private readonly paymentModel: Model<PaymentDocument>,
     private readonly config: ConfigService,
     private readonly documentsService: DocumentsService,
   ) {}
@@ -241,6 +245,26 @@ export class InvoicingService {
       throw new NotFoundException(`Invoice ${id} not found`);
     }
     await this.assertCaseManagerOwnsInvoice(invoice, actor);
+
+    // An invoice is only "paid" if real money was received: it has to point
+    // at a client payment that Stripe confirmed or an Admin approved. Without
+    // this, marking an invoice paid would be a way round the payment rules.
+    const settled = invoice.sourcePaymentId
+      ? await this.paymentModel
+          .findOne({
+            _id: invoice.sourcePaymentId,
+            caseId: invoice.caseId,
+            direction: 'CLIENT_TO_CM',
+            status: 'CAPTURED',
+          })
+          .select('_id')
+          .exec()
+      : null;
+    if (!settled) {
+      throw new BadRequestException(
+        'Link a received payment (Stripe, or an approved off-platform payment) to this invoice before marking it paid',
+      );
+    }
 
     invoice.status = InvoiceStatus.PAID;
     invoice.paidAt = new Date();

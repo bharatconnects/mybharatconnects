@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
-import { guestGuard } from '../../core/guards/guest.guard';
 
+// No guestGuard here: a signed-in user can still open the public site. Only
+// login/register stay guest-only (see login.routes.ts).
 export const LANDING_ROUTES: Routes = [
   {
     path: '',
     title: 'MyBharatConnects | Trusted NRI Services in India',
-    canActivate: [guestGuard],
     loadComponent: () => import('./landing.component').then(m => m.LandingComponent),
   },
 ];

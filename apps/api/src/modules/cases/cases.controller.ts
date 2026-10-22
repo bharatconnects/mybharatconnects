@@ -15,6 +15,8 @@ import { CreateCaseDto } from './dto/create-case.dto';
 import { UpdateCaseDto } from './dto/update-case.dto';
 import { TransitionStageDto } from './dto/transition-stage.dto';
 import { PauseCaseDto } from './dto/pause-case.dto';
+import { SetCasePaymentPolicyDto } from './dto/set-case-payment-policy.dto';
+import { RaiseIssueDto } from './dto/raise-issue.dto';
 import { CaseStatus } from '../../common/enums/case-status.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -87,6 +89,37 @@ export class CasesController {
     return this.casesService.findById(id, user);
   }
 
+  @Get(':id/checkpoints')
+  @Roles(Role.CLIENT, Role.CASE_MANAGER, Role.ADMIN, Role.OPS_FINANCE, Role.QA)
+  async getCheckpoints(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.casesService.getCheckpointsFor(id, user);
+  }
+
+  // The case manager (or an Admin) records the advance agreed with the client
+  // for this case: a percentage or a fixed amount, with the reason.
+  @Patch(':id/payment-policy')
+  @Roles(Role.CASE_MANAGER, Role.ADMIN)
+  async setPaymentPolicy(
+    @Param('id') id: string,
+    @Body() dto: SetCasePaymentPolicyDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.casesService.setPaymentPolicy(id, dto, user);
+  }
+
+  // Ask the client for whatever part of the quote is not paid or requested yet.
+  @Post(':id/request-balance')
+  @Roles(Role.CASE_MANAGER, Role.ADMIN)
+  async requestBalance(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.casesService.requestBalance(id, user);
+  }
+
   @Patch(':id/stage')
   @Roles(Role.CASE_MANAGER, Role.ADMIN)
   async transitionStage(
@@ -103,35 +136,36 @@ export class CasesController {
     );
   }
 
+  // Tells the client the work is complete and starts their window to confirm
+  // or raise an issue. Name kept so existing clients of this route still work.
   @Post(':id/request-close-confirmation')
   @Roles(Role.CASE_MANAGER, Role.ADMIN)
   async requestCloseConfirmation(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.casesService.transitionStage(
-      id,
-      CaseStatus.CLIENT_REVIEW,
-      user.userId,
-      'CM requested client confirmation of case completion',
-      user.role,
-    );
+    return this.casesService.requestClosure(id, user);
   }
 
+  // The client's optional early confirmation.
   @Post(':id/confirm-close')
   @Roles(Role.CLIENT)
   async confirmClose(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // findById enforces CLIENT ownership — throws ForbiddenException otherwise.
-    await this.casesService.findById(id, user);
-    return this.casesService.transitionStage(
-      id,
-      CaseStatus.CLOSED,
-      user.userId,
-      'Client confirmed case completion',
-    );
+    return this.casesService.confirmClosure(id, user);
+  }
+
+  // The client reports a problem instead of accepting closure.
+  @Post(':id/raise-issue')
+  @Roles(Role.CLIENT)
+  async raiseIssue(
+    @Param('id') id: string,
+    @Body() dto: RaiseIssueDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.casesService.raiseIssue(id, user, dto);
   }
 
   @Post(':id/notes')

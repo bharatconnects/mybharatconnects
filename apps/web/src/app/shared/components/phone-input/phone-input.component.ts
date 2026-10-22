@@ -3,12 +3,21 @@ import {
   Component,
   ElementRef,
   HostListener,
+  Injector,
   Input,
   ViewChild,
   forwardRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {
+  AbstractControl,
+  ControlValueAccessor,
+  NG_VALIDATORS,
+  NgControl,
+  NG_VALUE_ACCESSOR,
+  ValidationErrors,
+  Validator,
+} from '@angular/forms';
 import { COUNTRY_DIAL_CODES, CountryDialCode } from '../../data/country-dial-codes';
 
 @Component({
@@ -21,9 +30,18 @@ import { COUNTRY_DIAL_CODES, CountryDialCode } from '../../data/country-dial-cod
       useExisting: forwardRef(() => PhoneInputComponent),
       multi: true,
     },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => PhoneInputComponent),
+      multi: true,
+    },
   ],
   template: `
-    <div class="bb-phone-input" [class.bb-phone-dark]="theme === 'dark'">
+    <div
+      class="bb-phone-input"
+      [class.bb-phone-dark]="theme === 'dark'"
+      [class.bb-phone-invalid]="showError"
+    >
       <button
         type="button"
         class="bb-phone-code-btn"
@@ -47,7 +65,10 @@ import { COUNTRY_DIAL_CODES, CountryDialCode } from '../../data/country-dial-cod
         [placeholder]="placeholder"
         [(ngModel)]="nationalNumber"
         (ngModelChange)="onNumberChange()"
-        (blur)="onTouched()"
+        (blur)="onBlur()"
+        inputmode="tel"
+        maxlength="20"
+        [attr.aria-invalid]="showError ? 'true' : null"
         [disabled]="disabled"
         [attr.autocomplete]="autocomplete"
       />
@@ -75,6 +96,9 @@ import { COUNTRY_DIAL_CODES, CountryDialCode } from '../../data/country-dial-cod
         </div>
       }
     </div>
+    @if (showError) {
+      <p class="bb-phone-error" role="alert">{{ errorMessage }}</p>
+    }
   `,
   styles: [
     `
@@ -95,6 +119,14 @@ import { COUNTRY_DIAL_CODES, CountryDialCode } from '../../data/country-dial-cod
         background-color: var(--field-bg-focus);
         border-color: var(--field-border-focus);
         box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.18);
+      }
+      .bb-phone-invalid {
+        border-color: var(--error, #b42318);
+      }
+      .bb-phone-error {
+        margin: 0.25rem 0 0;
+        font-size: 0.75rem;
+        color: var(--error, #b42318);
       }
       .bb-phone-code-btn {
         display: flex;
@@ -245,7 +277,7 @@ import { COUNTRY_DIAL_CODES, CountryDialCode } from '../../data/country-dial-cod
     `,
   ],
 })
-export class PhoneInputComponent implements ControlValueAccessor {
+export class PhoneInputComponent implements ControlValueAccessor, Validator {
   @Input() inputId = '';
   @Input() placeholder = '';
   @Input() theme: 'light' | 'dark' = 'light';
@@ -261,11 +293,15 @@ export class PhoneInputComponent implements ControlValueAccessor {
   search = '';
   dropdownOpen = false;
   disabled = false;
+  private touched = false;
 
   private onChange: (value: string) => void = () => {};
   onTouched: () => void = () => {};
 
-  constructor(private elementRef: ElementRef<HTMLElement>) {}
+  constructor(
+    private elementRef: ElementRef<HTMLElement>,
+    private injector: Injector,
+  ) {}
 
   ngOnInit(): void {
     const match = this.countries.find((c) => c.iso2 === this.defaultCountryIso2);
@@ -300,7 +336,46 @@ export class PhoneInputComponent implements ControlValueAccessor {
   }
 
   onNumberChange(): void {
+    // Letters and symbols never belong in a phone number, so drop them as
+    // they are typed or pasted. Spaces, dashes, dots and brackets are kept
+    // for readability; the validator below still checks the digit count.
+    const cleaned = this.nationalNumber.replace(/[^\d\s().-]/g, '');
+    if (cleaned !== this.nationalNumber) this.nationalNumber = cleaned;
     this.emitValue();
+  }
+
+  onBlur(): void {
+    this.touched = true;
+    this.onTouched();
+  }
+
+  // Total digits (country code + number) must fit E.164: 7 to 15. An empty
+  // number is valid here; use Validators.required on the host form control
+  // where a phone is mandatory.
+  private digitCount(): number {
+    const national = this.nationalNumber.replace(/\D/g, '');
+    if (!national) return 0;
+    return this.selected.dialCode.replace(/\D/g, '').length + national.length;
+  }
+
+  get errorMessage(): string {
+    return 'Enter a valid phone number: numbers only, 7 to 15 digits including the country code.';
+  }
+
+  get showError(): boolean {
+    if (this.disabled) return false;
+    // Resolved lazily: injecting NgControl in the constructor would be a
+    // circular dependency with the NG_VALUE_ACCESSOR provider above. The
+    // host control's own touched flag also covers form.markAllAsTouched()
+    // on a failed submit, which never calls back into this component.
+    const hostTouched = this.injector.get(NgControl, null)?.control?.touched ?? false;
+    return (this.touched || hostTouched) && this.validate() !== null;
+  }
+
+  validate(_control?: AbstractControl): ValidationErrors | null {
+    const count = this.digitCount();
+    if (count === 0) return null;
+    return count >= 7 && count <= 15 ? null : { phone: true };
   }
 
   @HostListener('document:click', ['$event'])

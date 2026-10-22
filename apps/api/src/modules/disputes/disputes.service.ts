@@ -3,8 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { DisputeEvents } from './dispute-events';
+import type { DisputeClosedPayload } from './dispute-events';
 import { Role } from '../../common/enums/roles.enum';
 import { Case, CaseDocument } from '../cases/schemas/case.schema';
 import { AddNoteDto } from './dto/add-note.dto';
@@ -24,7 +27,26 @@ export class DisputesService {
     private readonly disputeModel: Model<DisputeDocument>,
     @InjectModel(Case.name)
     private readonly caseModel: Model<CaseDocument>,
+    private readonly events: EventEmitter2,
   ) {}
+
+  /** Disputes on a case that are still being worked on. */
+  async countOpenForCase(caseId: string): Promise<number> {
+    return this.disputeModel
+      .countDocuments({
+        caseId: new Types.ObjectId(caseId),
+        status: { $in: [DisputeStatus.OPEN, DisputeStatus.INVESTIGATING] },
+      })
+      .exec();
+  }
+
+  private emitClosed(dispute: DisputeDocument, outcome: DisputeClosedPayload['outcome']): void {
+    this.events.emit(DisputeEvents.CLOSED, {
+      disputeId: (dispute._id as Types.ObjectId).toString(),
+      caseId: dispute.caseId.toString(),
+      outcome,
+    } satisfies DisputeClosedPayload);
+  }
 
   // Shared ownership check for CASE_MANAGER actors — mirrors
   // payments.service.ts's capturePayment() pattern. CLIENT is checked
@@ -181,6 +203,7 @@ export class DisputesService {
       note: dto.resolution,
     });
     const saved = await dispute.save();
+    this.emitClosed(saved, 'RESOLVED');
     return this.disputeModel
       .findById(saved._id)
       .populate('caseId', 'caseNumber')
@@ -212,6 +235,7 @@ export class DisputesService {
       note: dto.reason,
     });
     const saved = await dispute.save();
+    this.emitClosed(saved, 'REJECTED');
     return this.disputeModel
       .findById(saved._id)
       .populate('caseId', 'caseNumber')

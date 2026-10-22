@@ -23,12 +23,22 @@ export class CasesListener {
     try {
       const caseDoc = await this.caseModel
         .findById(payload.caseId)
-        .select('caseNumber clientId')
+        .select('caseNumber clientId closure')
         .exec();
       if (!caseDoc) return;
       const client = await this.usersService.findById(caseDoc.clientId.toString());
       if (!client) return;
 
+      // A formal closure request carries a deadline for the client to confirm
+      // or raise an issue; a case that reached Client Review through QA does not.
+      const windowEndsAt = caseDoc.closure?.windowEndsAt;
+      if (caseDoc.closure?.requestedAt && windowEndsAt && windowEndsAt.getTime() > Date.now()) {
+        await this.emailService.sendClosureNoticeEmail(client.email, client.name, {
+          caseNumber: caseDoc.caseNumber,
+          windowEndsAt,
+        });
+        return;
+      }
       await this.emailService.sendCloseConfirmationRequestEmail(
         client.email,
         client.name,
@@ -38,6 +48,34 @@ export class CasesListener {
       const msg = err instanceof Error ? err.message : 'unknown error';
       this.logger.error(
         `[${CaseEvents.CLOSE_CONFIRMATION_REQUESTED}] failed for case ${payload.caseId}: ${msg}`,
+      );
+    }
+  }
+
+  // The client raised an issue: tell the case manager, at their own address.
+  @OnEvent(CaseEvents.ISSUE_RAISED)
+  async onIssueRaised(payload: CaseEventPayload): Promise<void> {
+    try {
+      const caseDoc = await this.caseModel
+        .findById(payload.caseId)
+        .select('caseNumber caseManagerId clientId')
+        .exec();
+      if (!caseDoc) return;
+      const [cm, client] = await Promise.all([
+        this.usersService.findById(caseDoc.caseManagerId.toString()),
+        this.usersService.findById(caseDoc.clientId.toString()),
+      ]);
+      if (!cm?.email) return;
+      const description = payload.metadata?.description;
+      await this.emailService.sendIssueRaisedEmail(cm.email, cm.name, {
+        caseNumber: caseDoc.caseNumber,
+        clientName: client?.name ?? 'The client',
+        description: typeof description === 'string' ? description : '',
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      this.logger.error(
+        `[${CaseEvents.ISSUE_RAISED}] failed for case ${payload.caseId}: ${msg}`,
       );
     }
   }

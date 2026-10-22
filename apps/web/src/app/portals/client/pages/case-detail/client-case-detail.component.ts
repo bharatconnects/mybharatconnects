@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, FormsModule } from '@angular/forms';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -17,6 +17,11 @@ import { PageTitleService } from '../../../../core/services/page-title.service';
 import { CaseStageTimelineComponent } from '../../../../shared/components/case-stage-timeline/case-stage-timeline.component';
 import { BbSelectComponent } from '../../../../shared/components/bb-select/bb-select.component';
 import { PaymentsService, Payment } from '../../../../core/services/payments.service';
+import {
+  CaseCheckpoints,
+  CheckpointsService,
+  formatMinor,
+} from '../../../../core/services/checkpoints.service';
 import {
   ALLOWED_DOCUMENT_FILE_ACCEPT,
   isAllowedDocumentFile,
@@ -144,7 +149,7 @@ const PRIORITY_BADGE: Record<string, string> = {
 @Component({
   selector: 'app-client-case-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, CaseStageTimelineComponent, BbSelectComponent],
+  imports: [CommonModule, FormsModule, RouterLink, CaseStageTimelineComponent, BbSelectComponent],
   providers: [FormBuilder],
   template: `
     <div class="max-w-5xl">
@@ -171,6 +176,28 @@ const PRIORITY_BADGE: Record<string, string> = {
             >
           </div>
         </div>
+
+        @if (advanceDue; as due) {
+          <div
+            class="flex items-start gap-3 px-4 py-3 rounded-lg mb-6 bg-warning/10 border border-warning/30"
+            role="status"
+          >
+            <i class="material-icons-outlined text-warning mt-0.5" aria-hidden="true">payments</i>
+            <div class="text-sm">
+              <p class="font-semibold m-0">Pay your advance to open this case</p>
+              <p class="m-0 mt-0.5 text-base-content/70">
+                An advance{{ due.percent ? ' (' + due.percent + '% of your accepted quote)' : '' }} is due before work
+                starts: <strong>{{ formatDueAmount(due.remaining) }}</strong> still to pay. Your case opens as soon as
+                the payment is confirmed. Use <strong>Pay Now</strong> in the Payments section below.
+              </p>
+              @if (due.arrangement) {
+                <p class="m-0 mt-1 text-base-content/70">
+                  <span class="font-medium">Agreed for the rest:</span> {{ due.arrangement }}
+                </p>
+              }
+            </div>
+          </div>
+        }
 
         <div class="bb-card mb-6">
           <div class="bb-card-body">
@@ -222,18 +249,91 @@ const PRIORITY_BADGE: Record<string, string> = {
         @if (caseData.status === 'CLIENT_REVIEW') {
           <div class="bb-card mb-6">
             <div class="bb-card-body">
-              <h3 class="bb-section-title">Confirm Completion</h3>
-              <p class="text-sm text-base-content/70 mb-3">
-                Your case manager has marked this case as complete. Please confirm once you're
-                satisfied with the work so the case can be closed.
+              <h3 class="bb-section-title">Review your case</h3>
+              @if (caseData.closure?.requestedAt && caseData.closure?.windowEndsAt) {
+                <p class="text-sm text-base-content/70 mb-3">
+                  Your case manager has marked this case complete. You have until
+                  <strong>{{ caseData.closure!.windowEndsAt | date: 'medium' }}</strong> to confirm everything is in
+                  order, or to tell us about anything that is not. If we do not hear about a problem by then, the
+                  case will be closed.
+                </p>
+              } @else {
+                <p class="text-sm text-base-content/70 mb-3">
+                  The work on this case has been reviewed. If you are satisfied you can confirm it, and if something
+                  is not right you can tell us before it is closed.
+                </p>
+              }
+              @if (!raisingIssue) {
+                <div class="flex flex-wrap gap-2">
+                  <button class="bb-btn bb-btn-primary" (click)="confirmClose()" [disabled]="confirmingClose">
+                    {{ confirmingClose ? 'Confirming...' : 'Confirm Case Complete' }}
+                  </button>
+                  <button class="bb-btn bb-btn-outline" (click)="openIssueForm()" [disabled]="confirmingClose">
+                    Something is not right
+                  </button>
+                </div>
+              } @else {
+                <div class="rounded-lg border border-base-300 p-3">
+                  <label class="bb-label" for="issue-text">What is the problem?</label>
+                  <textarea
+                    id="issue-text"
+                    rows="4"
+                    maxlength="2000"
+                    class="textarea textarea-bordered w-full text-sm"
+                    placeholder="Describe what is missing or not as agreed"
+                    [(ngModel)]="issueText"
+                    [attr.aria-invalid]="issueError ? 'true' : null"
+                  ></textarea>
+                  @if (issueError) {
+                    <p class="text-xs text-error mt-1 mb-0" role="alert">{{ issueError }}</p>
+                  }
+                  <p class="text-xs text-base-content/60 mt-2 mb-3">
+                    Your case manager is told straight away and the case will not be closed until this is sorted out.
+                  </p>
+                  <div class="flex gap-2">
+                    <button class="bb-btn bb-btn-ghost bb-btn-sm" (click)="cancelIssueForm()" [disabled]="issueBusy">
+                      Cancel
+                    </button>
+                    <button class="bb-btn bb-btn-primary bb-btn-sm" (click)="submitIssue()" [disabled]="issueBusy">
+                      {{ issueBusy ? 'Sending...' : 'Send to my case manager' }}
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (caseData.status === 'CLOSED') {
+          <div class="bb-card mb-6">
+            <div class="bb-card-body">
+              <h3 class="bb-section-title">How did we do?</h3>
+              <p class="text-sm text-base-content/70 mt-0 mb-3">
+                Your case is complete. We would value a rating, and a short review if you are happy to share one. You
+                choose what is shown with it, detail by detail.
               </p>
-              <button
-                class="bb-btn bb-btn-primary"
-                (click)="confirmClose()"
-                [disabled]="confirmingClose"
-              >
-                {{ confirmingClose ? 'Confirming...' : 'Confirm Case Complete' }}
-              </button>
+              <div>
+                <a
+                  class="bb-btn bb-btn-primary"
+                  [routerLink]="['/client/feedback']"
+                  [queryParams]="{ caseId: caseData._id }"
+                >
+                  <i class="material-icons-outlined text-base">star</i>
+                  Rate this service
+                </a>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (caseData.status === 'RESOLUTION_PENDING') {
+          <div class="bb-card mb-6">
+            <div class="bb-card-body">
+              <h3 class="bb-section-title">We are looking into your issue</h3>
+              <p class="text-sm text-base-content/70 m-0">
+                You told us something is not right with this case, so it stays open while your case manager works on
+                it. We will let you know once it has been resolved.
+              </p>
             </div>
           </div>
         }
@@ -450,6 +550,7 @@ const PRIORITY_BADGE: Record<string, string> = {
                                 >
                                   {{ milestoneBusyId === m._id ? 'Confirming…' : 'Confirm Complete' }}
                                 </button>
+                                <span class="text-xs text-base-content/50">Optional: your feedback helps, but work carries on either way</span>
                               }
                             </div>
                           }
@@ -917,6 +1018,10 @@ export class ClientCaseDetailComponent implements OnInit, OnDestroy {
   rejectingQuoteId: string | null = null;
   rejectReason = '';
   confirmingClose = false;
+  raisingIssue = false;
+  issueText = '';
+  issueError = '';
+  issueBusy = false;
   milestoneBusyId: string | null = null;
 
   // Discovery call booking
@@ -982,7 +1087,34 @@ export class ClientCaseDetailComponent implements OnInit, OnDestroy {
     private documentsService: DocumentsService,
     private pageTitleService: PageTitleService,
     private paymentsService: PaymentsService,
+    private checkpointsService: CheckpointsService,
   ) {}
+
+  checkpoints: CaseCheckpoints | null = null;
+
+  /** Set while the case is waiting on its advance, so the banner can say how much. */
+  get advanceDue(): { percent: number; remaining: number; arrangement: string | null } | null {
+    const cp = this.checkpoints;
+    if (!cp || !this.caseData || !cp.policy.advanceConfigured || cp.advance.satisfied) return null;
+    if (!cp.hasAcceptedQuote || cp.advance.remaining <= 0) return null;
+    if (this.caseData.status !== CaseStatus.QUOTE_SENT) return null;
+    return {
+      percent: cp.advance.mode === 'PERCENT' ? cp.advance.percent : 0,
+      remaining: cp.advance.remaining,
+      arrangement: cp.policy.arrangementNote,
+    };
+  }
+
+  formatDueAmount(minor: number): string {
+    return formatMinor(minor, this.checkpoints?.currency ?? null);
+  }
+
+  private loadCheckpoints(caseId: string): void {
+    this.checkpointsService.getCheckpoints(caseId).subscribe({
+      next: (cp) => (this.checkpoints = cp),
+      error: () => (this.checkpoints = null),
+    });
+  }
 
   ngOnInit(): void {
     // The route param is whatever identifier the URL used (the human-readable
@@ -997,6 +1129,7 @@ export class ClientCaseDetailComponent implements OnInit, OnDestroy {
         this.loadQuotes(c._id);
         this.loadDocuments(c._id);
         this.loadPayments(c._id);
+        this.loadCheckpoints(c._id);
         this.loadInvoices(c._id);
         if (this.canBookDiscovery()) {
           this.loadMyBooking();
@@ -1237,6 +1370,40 @@ export class ClientCaseDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  openIssueForm(): void {
+    this.raisingIssue = true;
+    this.issueText = '';
+    this.issueError = '';
+  }
+
+  cancelIssueForm(): void {
+    this.raisingIssue = false;
+    this.issueError = '';
+  }
+
+  submitIssue(): void {
+    if (!this.caseData || this.issueBusy) return;
+    const description = this.issueText.trim();
+    if (description.length < 10) {
+      this.issueError = 'Please describe the problem in at least 10 characters.';
+      return;
+    }
+    this.issueError = '';
+    this.issueBusy = true;
+    this.api.post<Case>(`/cases/${this.caseData._id}/raise-issue`, { description }).subscribe({
+      next: (updated) => {
+        this.caseData = updated as Omit<Case, 'status'> & { status: CaseStatus };
+        this.issueBusy = false;
+        this.raisingIssue = false;
+        this.toast.success('Your case manager has been told');
+      },
+      error: (err) => {
+        this.issueBusy = false;
+        this.toast.error(extractApiError(err, 'Could not send your issue').message);
+      },
+    });
+  }
+
   getPriorityBadge(priority: string): string {
     return PRIORITY_BADGE[priority?.toUpperCase()] ?? 'bb-chip-neutral';
   }
@@ -1446,7 +1613,10 @@ export class ClientCaseDetailComponent implements OnInit, OnDestroy {
       // the form stuck if only the sync call hiccups.
       const finish = () => {
         this.cancelPayForm();
-        if (this.caseData) this.loadPayments(this.caseData._id);
+        if (this.caseData) {
+          this.loadPayments(this.caseData._id);
+          this.loadCheckpoints(this.caseData._id);
+        }
         this.toast.success('Payment received. Thank you!');
       };
       this.api.post(`/payments/${p._id}/confirm`, {}).subscribe({ next: finish, error: finish });

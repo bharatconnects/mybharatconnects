@@ -11,11 +11,14 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { FeedbackService } from './feedback.service';
-import type {
-  SubmitRatingDto,
-  CreateTestimonialDto,
-  SubmitComplaintDto,
-} from './feedback.service';
+import type { SubmitComplaintDto } from './feedback.service';
+import {
+  CreateTestimonialBodyDto,
+  PrefillQueryDto,
+  ShareConsentDto,
+  SubmitPlatformRatingDto,
+  SubmitTargetRatingDto,
+} from './dto/feedback.dto';
 import type { ComplaintStatus } from './schemas/complaint.schema';
 import type { RatingType } from './schemas/rating.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -32,20 +35,44 @@ import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}
 
+  // What the feedback form starts with. Declared before the ':id' routes.
+  @Get('prefill')
+  @Roles(Role.CLIENT)
+  async prefill(@Query() query: PrefillQueryDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.feedbackService.getPrefill(user.userId, query.caseId);
+  }
+
+  @Get('ratings/mine')
+  @Roles(Role.CLIENT)
+  async myRatings(@CurrentUser() user: AuthenticatedUser) {
+    return this.feedbackService.findMyRatings(user.userId);
+  }
+
   @Post('ratings/platform')
   @Roles(Role.CLIENT)
   async submitPlatformRating(
-    @Body() dto: { starRating: number; comment?: string; caseId?: string },
+    @Body() dto: SubmitPlatformRatingDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.feedbackService.submitPlatformRating(user.userId, dto);
+  }
+
+  // The customer changes what may be shown publicly, at any time.
+  @Patch('ratings/:id/consent')
+  @Roles(Role.CLIENT)
+  async updateConsent(
+    @Param('id') ratingId: string,
+    @Body() dto: ShareConsentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.feedbackService.updateConsent(ratingId, user.userId, dto);
   }
 
   @Post('ratings/consultant/:consultantId')
   @Roles(Role.CLIENT)
   async submitConsultantRating(
     @Param('consultantId') consultantId: string,
-    @Body() dto: SubmitRatingDto & { caseId: string },
+    @Body() dto: SubmitTargetRatingDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.feedbackService.submitConsultantRating(
@@ -60,7 +87,7 @@ export class FeedbackController {
   @Roles(Role.CLIENT)
   async submitVendorRating(
     @Param('vendorId') vendorId: string,
-    @Body() dto: SubmitRatingDto & { caseId: string },
+    @Body() dto: SubmitTargetRatingDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.feedbackService.submitVendorRating(
@@ -104,7 +131,7 @@ export class FeedbackController {
   @Roles(Role.CLIENT)
   async createTestimonial(
     @Param('ratingId') ratingId: string,
-    @Body() dto: CreateTestimonialDto,
+    @Body() dto: CreateTestimonialBodyDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.feedbackService.createTestimonial(ratingId, {

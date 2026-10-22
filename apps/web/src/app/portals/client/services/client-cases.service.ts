@@ -31,9 +31,40 @@ export interface ServiceRequest {
   createdAt: string;
 }
 
+export interface ShareChoices {
+  name: boolean;
+  location: boolean;
+  service: boolean;
+  publish: boolean;
+}
+
 export interface PlatformRatingDto {
   starRating: number;
   comment?: string;
+  caseId?: string;
+  /** Shown next to the review only for the details switched on in `share`. */
+  displayName?: string;
+  location?: string;
+  serviceLabel?: string;
+  share?: ShareChoices;
+}
+
+export interface FeedbackPrefill {
+  displayName: string;
+  location: string | null;
+  service: string | null;
+  selectedCaseId: string | null;
+  cases: { caseId: string; caseNumber: string; serviceType: string; status: string }[];
+}
+
+export interface MyRating {
+  _id: string;
+  starRating?: number;
+  comment?: string;
+  reviewer?: { displayName?: string; location?: string; serviceLabel?: string };
+  shareConsent: ShareChoices | null;
+  featuredOnWebsite: boolean;
+  createdAt?: string;
 }
 
 export interface ConsultantRatingDto {
@@ -129,6 +160,18 @@ export class ClientCasesService {
   // ─── Feedback ────────────────────────────────────────
   submitPlatformRating(dto: PlatformRatingDto): Observable<{ _id: string }> {
     return this.api.post<{ _id: string }>('/feedback/ratings/platform', dto);
+  }
+
+  getFeedbackPrefill(caseId?: string): Observable<FeedbackPrefill> {
+    return this.api.get<FeedbackPrefill>('/feedback/prefill', caseId ? { caseId } : undefined);
+  }
+
+  getMyRatings(): Observable<MyRating[]> {
+    return this.api.get<MyRating[]>('/feedback/ratings/mine');
+  }
+
+  updateRatingSharing(ratingId: string, choices: Partial<ShareChoices>): Observable<unknown> {
+    return this.api.patch<unknown>(`/feedback/ratings/${ratingId}/consent`, choices);
   }
 
   submitConsultantRating(consultantId: string, dto: ConsultantRatingDto): Observable<unknown> {

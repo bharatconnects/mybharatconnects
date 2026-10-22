@@ -6,6 +6,7 @@ import { DocumentsModule } from '../documents/documents.module';
 import { InvoicingController } from './invoicing.controller';
 import { InvoicingService } from './invoicing.service';
 import { Invoice, InvoiceSchema } from './schemas/invoice.schema';
+import { Payment, PaymentSchema } from '../payments/schemas/payment.schema';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { Invoice, InvoiceSchema } from './schemas/invoice.schema';
       { name: Invoice.name, schema: InvoiceSchema },
       { name: Counter.name, schema: CounterSchema },
       { name: Case.name, schema: CaseSchema },
+      { name: Payment.name, schema: PaymentSchema },
     ]),
     DocumentsModule,
   ],

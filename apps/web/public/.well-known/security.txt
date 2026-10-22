@@ -1,0 +1,6 @@
+# Report security vulnerabilities to the address below. Please include steps
+# to reproduce and do not access or modify other users' data while testing.
+Contact: mailto:info@mybharatconnects.com
+Expires: 2027-10-16T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://mybharatconnects.com/.well-known/security.txt

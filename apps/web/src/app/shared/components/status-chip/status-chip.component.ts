@@ -13,6 +13,7 @@ const STATUS_BADGE: Record<string, string> = {
   CASE_OPEN: 'bb-chip-info',
   ASSIGNED: 'bb-chip-info',
   CLIENT_REVIEW: 'bb-chip-info',
+  RESOLUTION_PENDING: 'bb-chip-danger',
   DOCUMENT_COLLECTION: 'bb-chip-info',
 
   VENDOR_SELECTION: 'bb-chip-warning',

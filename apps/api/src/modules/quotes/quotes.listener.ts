@@ -8,6 +8,7 @@ import { Quote, QuoteDocument } from './schemas/quote.schema';
 import { Vendor, VendorDocument } from '../vendors/schemas/vendor.schema';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../notifications/notifications.email.service';
+import { QuotesService } from './quotes.service';
 
 interface QuoteEventPayload {
   caseId: string;
@@ -25,6 +26,7 @@ export class QuotesListener {
     @InjectModel(Vendor.name) private readonly vendorModel: Model<VendorDocument>,
     private readonly usersService: UsersService,
     private readonly emailService: EmailService,
+    private readonly quotesService: QuotesService,
   ) {}
 
   @OnEvent(QuoteEvents.INVITE_SENT)
@@ -222,6 +224,21 @@ export class QuotesListener {
       'caseManagerId',
       'The vendor has marked all milestones for this case as complete.',
     );
+  }
+
+  // A captured client payment for an approved milestone settles it. Runs for
+  // Stripe payments and for Admin-approved off-platform payments alike, since
+  // both raise PAYMENT_CAPTURED.
+  @OnEvent(CaseEvents.PAYMENT_CAPTURED)
+  async onPaymentCaptured(payload: QuoteEventPayload): Promise<void> {
+    try {
+      const paymentId = payload.metadata?.paymentId;
+      if (typeof paymentId !== 'string') return;
+      await this.quotesService.settleMilestoneFromPayment(paymentId);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      this.logger.error(`[${CaseEvents.PAYMENT_CAPTURED}] milestone settlement failed: ${msg}`);
+    }
   }
 
   @OnEvent(CaseEvents.MILESTONE_PAID)

@@ -1,5 +1,6 @@
 import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ServiceType } from '../schemas/lead.schema';
+import { IsPhone } from '../../../common/validators/is-phone.validator';
 
 // Deliberately narrower than UpdateLeadDto — a client may only edit the
 // content of their own request, never CM-internal fields (status,
@@ -13,7 +14,7 @@ export class UpdateLeadByClientDto {
   @IsOptional()
   email?: string;
 
-  @IsString()
+  @IsPhone()
   @IsOptional()
   phone?: string;
 

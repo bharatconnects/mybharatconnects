@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -19,7 +20,6 @@ import { RespondQuoteDto } from './dto/respond-quote.dto';
 import { InviteQuotesDto } from './dto/invite-quotes.dto';
 import { SubmitQuoteDto } from './dto/submit-quote.dto';
 import { DeclineQuoteDto } from './dto/decline-quote.dto';
-import { MarkMilestonePaidDto } from './dto/mark-milestone-paid.dto';
 import { UpdateClientQuoteDto } from './dto/update-client-quote.dto';
 import { RequestQuoteInfoDto } from './dto/request-quote-info.dto';
 import { AnswerQuoteInfoDto } from './dto/answer-quote-info.dto';
@@ -172,15 +172,24 @@ export class QuotesController {
     return this.quotesService.clientApproveMilestone(id, mid, user.userId);
   }
 
-  @Patch(':id/milestones/:mid/mark-paid')
-  @Roles(Role.OPS_FINANCE, Role.CASE_MANAGER, Role.ADMIN)
-  markMilestonePaid(
+  @Post(':id/milestones/:mid/request-payment')
+  @Roles(Role.CASE_MANAGER, Role.ADMIN)
+  requestMilestonePayment(
     @Param('id') id: string,
     @Param('mid') mid: string,
-    @Body() dto: MarkMilestonePaidDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.quotesService.markMilestonePaid(id, mid, user.userId, dto);
+    return this.quotesService.requestMilestonePayment(id, mid, user);
+  }
+
+  // Replaced by request-payment. Left in place so an older cached web build
+  // gets an explanation instead of a 404.
+  @Patch(':id/milestones/:mid/mark-paid')
+  @Roles(Role.OPS_FINANCE, Role.CASE_MANAGER, Role.ADMIN)
+  markMilestonePaid() {
+    throw new BadRequestException(
+      'A milestone is marked paid automatically when the client pays through Stripe. Use "Request payment", or record an off-platform payment for Admin approval.',
+    );
   }
 
   @Get('case/:caseId')

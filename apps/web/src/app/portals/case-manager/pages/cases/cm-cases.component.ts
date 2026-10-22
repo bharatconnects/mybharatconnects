@@ -44,6 +44,7 @@ const STATUS_CHIP: Record<string, string> = {
   DOCUMENT_COLLECTION: 'bb-chip-warning',
   QA_REVIEW: 'bb-chip-info',
   CLIENT_REVIEW: 'bb-chip-info',
+  RESOLUTION_PENDING: 'bb-chip-danger',
   CLOSED: 'bb-chip-neutral',
 };
 
@@ -311,7 +312,7 @@ export class CmCasesComponent implements OnInit {
   loading = true;
   filtersExpanded = true;
   clusterLabel = CLUSTER_LABEL;
-  stageOrder = STAGE_ORDER;
+  stageOrder = [...STAGE_ORDER, CaseStatus.RESOLUTION_PENDING];
   stageLabel = STAGE_LABEL;
   readonly stageCssClass = stageCssClass;
 

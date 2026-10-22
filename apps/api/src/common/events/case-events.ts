@@ -4,6 +4,7 @@ export const CaseEvents = {
   PAYMENT_CAPTURED: 'case.payment.captured',
   QA_APPROVED: 'case.qa.approved',
   QA_REJECTED: 'case.qa.rejected',
+  QA_REVIEW_STARTED: 'case.qa.review_started',
   WELCOME_PACK_DUE: 'case.welcome.due',
   HOLD_RELEASED: 'case.hold.released',
   MILESTONE_MARKED_DONE: 'case.milestone.marked_done',
@@ -12,6 +13,7 @@ export const CaseEvents = {
   ALL_MILESTONES_COMPLETE: 'case.milestones.all_complete',
   CLOSE_CONFIRMATION_REQUESTED: 'case.close.confirmation_requested',
   CASE_CLOSE_CONFIRMED: 'case.close.confirmed',
+  ISSUE_RAISED: 'case.issue.raised',
 } as const;
 
 export const QuoteEvents = {

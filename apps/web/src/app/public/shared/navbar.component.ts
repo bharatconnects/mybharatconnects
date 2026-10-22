@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, Input, ViewEncapsulation } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../core/auth/auth.service';
 import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-logo.component';
 import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-catalog';
 
@@ -496,10 +497,17 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
         <a routerLink="/blog" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">Blog</a>
         <a routerLink="/faq" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">FAQ</a>
         <a routerLink="/careers" class="bb-nav-desktop-link bb-nav-link bb-nav-link-muted">Careers</a>
-        <a routerLink="/auth/login" class="bb-nav-cta">
-          Sign In
-          <i class="material-icons-outlined text-lg" aria-hidden="true">arrow_forward</i>
-        </a>
+        @if (isLoggedIn) {
+          <a [routerLink]="portalRoute" class="bb-nav-cta">
+            Go to portal
+            <i class="material-icons-outlined text-lg" aria-hidden="true">arrow_forward</i>
+          </a>
+        } @else {
+          <a routerLink="/auth/login" class="bb-nav-cta">
+            Sign In
+            <i class="material-icons-outlined text-lg" aria-hidden="true">arrow_forward</i>
+          </a>
+        }
         <a routerLink="/" fragment="consultation" class="bb-nav-cta bb-nav-cta-primary">
           <i class="material-icons-outlined text-lg" aria-hidden="true">event_available</i>
           Book Discovery Call
@@ -555,6 +563,17 @@ import { SERVICE_VERTICALS, ServiceVertical } from '../../shared/data/service-ca
             Careers
           </a>
           <a
+            [routerLink]="isLoggedIn ? portalRoute : '/auth/login'"
+            class="bb-mobile-menu-link"
+            role="menuitem"
+            (click)="closeMobileMenu()"
+          >
+            <i class="material-icons-outlined" aria-hidden="true">{{
+              isLoggedIn ? 'dashboard' : 'login'
+            }}</i>
+            {{ isLoggedIn ? 'Go to portal' : 'Sign In' }}
+          </a>
+          <a
             routerLink="/"
             fragment="consultation"
             class="bb-mobile-menu-link bb-mobile-menu-cta"
@@ -585,10 +604,21 @@ export class NavbarComponent {
   // trigger down into the panel (a diagonal path) doesn't flicker it shut.
   private closeTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private elementRef: ElementRef<HTMLElement>) {
+  constructor(
+    private elementRef: ElementRef<HTMLElement>,
+    private authService: AuthService,
+  ) {
     if (typeof window !== 'undefined') {
       this.scrolled = window.scrollY > this.scrollThreshold;
     }
+  }
+
+  get isLoggedIn(): boolean {
+    return this.authService.isLoggedIn;
+  }
+
+  get portalRoute(): string {
+    return this.authService.getPortalRoute();
   }
 
   @HostListener('window:scroll')

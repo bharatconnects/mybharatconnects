@@ -9,6 +9,56 @@ export interface PaymentIntent {
 
 export type PaymentPurpose = 'TOKEN' | 'PARTIAL' | 'MILESTONE' | 'FULL';
 export type PaymentDirection = 'CLIENT_TO_CM' | 'CM_TO_VENDOR';
+export type OfflinePaymentMethod = 'BANK_TRANSFER' | 'UPI' | 'CASH' | 'CHEQUE' | 'OTHER';
+export type OfflineApprovalStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+
+export interface OfflinePaymentDetails {
+  method: OfflinePaymentMethod;
+  reference?: string;
+  proofDocumentId?: string;
+  note?: string;
+  status: OfflineApprovalStatus;
+  requestedBy?: string | { _id: string; name?: string; email?: string };
+  requestedAt?: string;
+  decidedBy?: string | { _id: string; name?: string; email?: string };
+  decidedAt?: string;
+  decisionNote?: string;
+}
+
+export const OFFLINE_METHOD_LABEL: Record<OfflinePaymentMethod, string> = {
+  BANK_TRANSFER: 'Bank transfer',
+  UPI: 'UPI',
+  CASH: 'Cash',
+  CHEQUE: 'Cheque',
+  OTHER: 'Other',
+};
+
+export interface RequestOfflinePaymentPayload {
+  caseId: string;
+  amountInPaise: number;
+  purpose: PaymentPurpose;
+  method: OfflinePaymentMethod;
+  reference?: string;
+  description: string;
+  note: string;
+  proofDocumentId?: string;
+  quoteId?: string;
+  milestoneId?: string;
+  supersedesPaymentId?: string;
+}
+
+export interface PaymentAuditEvent {
+  _id: string;
+  type: string;
+  source: string;
+  actorRole?: string;
+  actorUserId?: string | { _id: string; name?: string; email?: string };
+  fromStatus?: string;
+  toStatus?: string;
+  amount?: number;
+  note?: string;
+  createdAt: string;
+}
 
 export interface Payment {
   _id: string;
@@ -21,7 +71,17 @@ export interface Payment {
   vendorName?: string;
   amountInPaise: number;
   currency: string;
-  status: 'pending' | 'authorized' | 'captured' | 'failed' | 'refunded';
+  status:
+    | 'pending'
+    | 'pending_approval'
+    | 'authorized'
+    | 'captured'
+    | 'failed'
+    | 'refunded'
+    | 'rejected';
+  provider?: 'STRIPE' | 'OFFLINE';
+  settlement?: 'STRIPE' | 'OFFLINE_APPROVED' | 'LEGACY_MANUAL';
+  offline?: OfflinePaymentDetails;
   description: string;
   transactionId?: string;
   purpose?: PaymentPurpose;
@@ -45,6 +105,9 @@ type ApiPayment = {
   status: string;
   description?: string;
   stripePaymentIntentId?: string;
+  provider?: 'STRIPE' | 'OFFLINE';
+  settlement?: 'STRIPE' | 'OFFLINE_APPROVED' | 'LEGACY_MANUAL';
+  offline?: OfflinePaymentDetails;
   purpose?: PaymentPurpose;
   milestoneId?: string;
   receiptDocumentId?: string;
@@ -85,6 +148,8 @@ export class PaymentsService {
     const normalized = status.toLowerCase();
     if (
       normalized === 'pending' ||
+      normalized === 'pending_approval' ||
+      normalized === 'rejected' ||
       normalized === 'authorized' ||
       normalized === 'captured' ||
       normalized === 'failed' ||
@@ -136,6 +201,9 @@ export class PaymentsService {
       status: this.toUiStatus(payment.status),
       description: payment.description ?? '',
       transactionId: payment.stripePaymentIntentId,
+      provider: payment.provider,
+      settlement: payment.settlement,
+      offline: payment.offline,
       purpose: payment.purpose,
       milestoneId: payment.milestoneId,
       receiptDocumentId: payment.receiptDocumentId,
@@ -205,6 +273,49 @@ export class PaymentsService {
   markPaid(paymentId: string, receiptDocumentId?: string): Observable<Payment> {
     return this.api
       .post<ApiPayment>(`/payments/${paymentId}/mark-paid`, { receiptDocumentId })
+      .pipe(map((payment) => this.mapPayment(payment)));
+  }
+
+  /** Record a client payment received outside Stripe. Counts for nothing until an Admin approves it. */
+  requestOfflinePayment(payload: RequestOfflinePaymentPayload): Observable<Payment> {
+    return this.api
+      .post<ApiPayment>('/payments/offline-request', payload)
+      .pipe(map((payment) => this.mapPayment(payment)));
+  }
+
+  getOfflineRequests(status?: OfflineApprovalStatus): Observable<Payment[]> {
+    return this.api
+      .get<ApiPayment[]>('/payments/offline-requests', status ? { status } : undefined)
+      .pipe(map((payments) => payments.map((payment) => this.mapPayment(payment))));
+  }
+
+  approveOffline(paymentId: string, note?: string): Observable<Payment> {
+    return this.api
+      .post<ApiPayment>(`/payments/${paymentId}/offline/approve`, { note })
+      .pipe(map((payment) => this.mapPayment(payment)));
+  }
+
+  rejectOffline(paymentId: string, note: string): Observable<Payment> {
+    return this.api
+      .post<ApiPayment>(`/payments/${paymentId}/offline/reject`, { note })
+      .pipe(map((payment) => this.mapPayment(payment)));
+  }
+
+  /** Re-checks a Stripe payment with Stripe. It can only report what Stripe says; it cannot mark anything paid. */
+  syncWithStripe(paymentId: string): Observable<Payment> {
+    return this.api
+      .post<ApiPayment>(`/payments/${paymentId}/sync`, {})
+      .pipe(map((payment) => this.mapPayment(payment)));
+  }
+
+  getAuditEvents(paymentId: string): Observable<PaymentAuditEvent[]> {
+    return this.api.get<PaymentAuditEvent[]>(`/payments/${paymentId}/events`);
+  }
+
+  /** Asks the client to pay an approved milestone through Stripe. */
+  requestMilestonePayment(quoteId: string, milestoneId: string): Observable<Payment> {
+    return this.api
+      .post<ApiPayment>(`/quotes/${quoteId}/milestones/${milestoneId}/request-payment`, {})
       .pipe(map((payment) => this.mapPayment(payment)));
   }
 

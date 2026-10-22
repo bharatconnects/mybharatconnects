@@ -19,6 +19,11 @@ import {
 import { Lead, LeadSchema } from '../leads/schemas/lead.schema';
 import { UsersModule } from '../users/users.module';
 import { CasesListener } from './cases.listener';
+import { CaseCheckpointsService } from './case-checkpoints.service';
+import { Payment, PaymentSchema } from '../payments/schemas/payment.schema';
+import { PaymentsModule } from '../payments/payments.module';
+import { SettingsModule } from '../settings/settings.module';
+import { DisputesModule } from '../disputes/disputes.module';
 
 @Module({
   imports: [
@@ -30,13 +35,17 @@ import { CasesListener } from './cases.listener';
       { name: Quote.name, schema: QuoteSchema },
       { name: ActionItem.name, schema: ActionItemSchema },
       { name: Lead.name, schema: LeadSchema },
+      { name: Payment.name, schema: PaymentSchema },
     ]),
     NotificationsModule,
     UsersModule,
     DocumentsModule,
+    PaymentsModule,
+    SettingsModule,
+    DisputesModule,
   ],
   controllers: [CasesController],
-  providers: [CasesService, CasesListener],
-  exports: [CasesService],
+  providers: [CasesService, CasesListener, CaseCheckpointsService],
+  exports: [CasesService, CaseCheckpointsService],
 })
 export class CasesModule {}

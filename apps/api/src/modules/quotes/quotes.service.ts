@@ -25,7 +25,6 @@ import { RespondQuoteDto, QuoteResponse } from './dto/respond-quote.dto';
 import { InviteQuotesDto } from './dto/invite-quotes.dto';
 import { SubmitQuoteDto } from './dto/submit-quote.dto';
 import { DeclineQuoteDto } from './dto/decline-quote.dto';
-import { MarkMilestonePaidDto } from './dto/mark-milestone-paid.dto';
 import { UpdateClientQuoteDto } from './dto/update-client-quote.dto';
 import { RequestQuoteInfoDto } from './dto/request-quote-info.dto';
 import { AnswerQuoteInfoDto } from './dto/answer-quote-info.dto';
@@ -590,6 +589,21 @@ export class QuotesService {
     return updated!;
   }
 
+  /**
+   * What the client owes for a milestone. Quotes accepted before computed
+   * amounts were stored correctly have none, so a percentage milestone is
+   * worked out here from the total the client was quoted instead of being
+   * mistaken for a fixed amount.
+   */
+  private milestoneAmount(quote: QuoteDocument, milestone: QuoteMilestone): number {
+    if (typeof milestone.computedAmount === 'number') return milestone.computedAmount;
+    if (milestone.amountType === MilestoneAmountType.PERCENT) {
+      const base = quote.clientTotalAmount ?? quote.totalAmount ?? 0;
+      return Math.round(((base * milestone.amountValue) / 100) * 100) / 100;
+    }
+    return milestone.amountValue;
+  }
+
   private computeMilestoneAmounts(
     milestones: QuoteMilestone[],
     totalAmount: number,
@@ -680,55 +694,110 @@ export class QuotesService {
     return quote;
   }
 
-  async markMilestonePaid(
+  // The client pays an approved milestone through Stripe. This creates the
+  // payment request for them to pay; the milestone flips to PAID on its own
+  // when that payment settles (settleMilestoneFromPayment). A CM can no longer
+  // declare a client payment received. A payment made outside Stripe goes
+  // through the Admin-approved off-platform request instead.
+  async requestMilestonePayment(
     quoteId: string,
     milestoneId: string,
-    actorUserId: string,
-    dto: MarkMilestonePaidDto,
-  ): Promise<QuoteDocument> {
+    actor: AuthenticatedUser,
+  ) {
     const quote = await this.quoteModel.findById(quoteId).exec();
     if (!quote) throw new NotFoundException(`Quote #${quoteId} not found`);
     const milestone = quote.milestones.find(
       (m) => (m._id as Types.ObjectId)?.toString() === milestoneId,
     );
     if (!milestone) throw new NotFoundException(`Milestone #${milestoneId} not found`);
-    if (milestone.status !== MilestoneStatus.CLIENT_APPROVED) {
+    // The vendor marking the work complete is enough to ask for payment. The
+    // client can still approve it (and is always offered the chance), but a
+    // missing approval does not hold the case up.
+    if (
+      milestone.status !== MilestoneStatus.CLIENT_APPROVED &&
+      milestone.status !== MilestoneStatus.VENDOR_MARKED_DONE
+    ) {
       throw new BadRequestException(
-        'Milestone must be approved by the client before it can be marked paid',
+        'The vendor must mark the milestone complete before payment can be requested',
       );
     }
 
-    milestone.status = MilestoneStatus.PAID;
-    milestone.paidAt = new Date();
-    milestone.paidBy = new Types.ObjectId(actorUserId);
-    if (dto.receiptDocumentId) {
-      milestone.clientReceiptDocumentId = new Types.ObjectId(dto.receiptDocumentId);
+    if (actor.role === Role.CASE_MANAGER) {
+      const caseDoc = await this.caseModel.findById(quote.caseId).select('caseManagerId').exec();
+      if (!caseDoc || caseDoc.caseManagerId.toString() !== actor.userId) {
+        throw new ForbiddenException('Not authorized for this case');
+      }
     }
-    await quote.save();
 
-    // The client's payment for this milestone is settled in the same step —
-    // records it on the shared payments ledger (visible to CM/OPS_FINANCE/
-    // client alongside every other payment on the case) rather than only
-    // living as a status flag on the milestone subdocument.
-    await this.paymentsService.createSettledPayment({
-      caseId: quote.caseId.toString(),
-      clientId: quote.clientId.toString(),
-      quoteId,
-      milestoneId,
-      amountInPaise: Math.round((milestone.computedAmount ?? milestone.amountValue) * 100),
-      purpose: 'MILESTONE',
-      description: `Milestone payment: ${milestone.title}`,
-      actorUserId,
-      receiptDocumentId: dto.receiptDocumentId,
-    });
+    // Idempotent: a double click, or a second CM tab, returns the request that
+    // already exists instead of creating a second charge for the same milestone.
+    const active = await this.paymentsService.findActivePaymentForMilestone(milestoneId);
+    if (active) {
+      if (active.status === 'PENDING' && active.provider === 'STRIPE') return active;
+      throw new BadRequestException(
+        `This milestone already has a ${active.status.toLowerCase().replace('_', ' ')} payment`,
+      );
+    }
+
+    return this.paymentsService.requestPayment(
+      actor.userId,
+      {
+        caseId: quote.caseId.toString(),
+        clientId: quote.clientId.toString(),
+        amountInPaise: Math.round(this.milestoneAmount(quote, milestone) * 100),
+        purpose: 'MILESTONE',
+        description: `Milestone payment: ${milestone.title}`,
+        quoteId,
+        milestoneId,
+      },
+      actor.role,
+    );
+  }
+
+  // Called when a client payment is captured (Stripe, or an Admin-approved
+  // off-platform payment). If it was for a milestone the client had approved,
+  // mark that milestone PAID. A no-op for any other payment, and for a
+  // milestone that is no longer in the approved state.
+  async settleMilestoneFromPayment(paymentId: string): Promise<void> {
+    const payment = await this.paymentsService.findRawById(paymentId);
+    if (
+      !payment ||
+      payment.direction !== 'CLIENT_TO_CM' ||
+      payment.status !== 'CAPTURED' ||
+      !payment.milestoneId ||
+      !payment.quoteId
+    ) {
+      return;
+    }
+    const quote = await this.quoteModel.findById(payment.quoteId).exec();
+    const milestone = quote?.milestones.find(
+      (m) => (m._id as Types.ObjectId)?.toString() === payment.milestoneId!.toString(),
+    );
+    if (
+      !quote ||
+      !milestone ||
+      (milestone.status !== MilestoneStatus.CLIENT_APPROVED &&
+        milestone.status !== MilestoneStatus.VENDOR_MARKED_DONE)
+    ) {
+      return;
+    }
+
+    milestone.status = MilestoneStatus.PAID;
+    milestone.paidAt = payment.capturedAt ?? new Date();
+    if (payment.requestedBy) milestone.paidBy = payment.requestedBy;
+    if (payment.receiptDocumentId) milestone.clientReceiptDocumentId = payment.receiptDocumentId;
+    await quote.save();
 
     this.events.emit(CaseEvents.MILESTONE_PAID, {
       caseId: quote.caseId.toString(),
-      actorUserId,
-      metadata: { quoteId, milestoneId, milestoneTitle: milestone.title },
+      actorUserId: payment.requestedBy?.toString() ?? '',
+      metadata: {
+        quoteId: (quote._id as Types.ObjectId).toString(),
+        milestoneId: payment.milestoneId.toString(),
+        milestoneTitle: milestone.title,
+        paymentId,
+      },
     } satisfies CaseEventPayload);
-
-    return quote;
   }
 
   async send(id: string): Promise<QuoteDocument> {
@@ -783,10 +852,16 @@ export class QuotesService {
     };
 
     if (dto.response === QuoteResponse.ACCEPTED) {
-      const totalAmount = quote.totalAmount ?? 0;
+      // Percentage milestones are worked out on the total the client was
+      // quoted (the client-facing quote), not the vendor's own figure, so what
+      // they add up to is what the client has to pay.
+      const totalAmount = quote.clientTotalAmount ?? quote.totalAmount ?? 0;
       const sourceMilestones: QuoteMilestone[] =
         quote.quoteType === QuoteType.MILESTONE && quote.milestones.length > 0
-          ? quote.milestones
+          ? // Plain objects, not Mongoose sub-documents: spreading a sub-document
+            // in computeMilestoneAmounts() drops the computed amount, which left
+            // every milestone of a milestone quote without one.
+            quote.milestones.map((m) => (m as unknown as { toObject(): QuoteMilestone }).toObject())
           : [
               {
                 title: 'Full payment',

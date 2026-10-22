@@ -14,6 +14,14 @@ export interface Case {
   propertyDetails?: PropertyDetails;
   timeline: Record<string, string>;
   stageHistory?: { stage: string; changedAt: string; note?: string }[];
+  /** Set once closure has been requested; see the case closure flow. */
+  closure?: {
+    requestedAt?: string;
+    windowEndsAt?: string;
+    clientConfirmedAt?: string;
+    issueRaisedAt?: string;
+    issueResolvedAt?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }

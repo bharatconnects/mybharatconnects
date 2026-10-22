@@ -298,8 +298,8 @@ describe('Case lifecycle overhaul (e2e)', () => {
       return { cm, client, vendorUser, quote };
     }
 
-    it('vendor marks milestone done → client can approve → OPS_FINANCE can mark paid', async () => {
-      const { client, vendorUser, quote } = await seedAcceptedMilestoneQuote();
+    it('vendor marks milestone done → client approves → CM requests payment → an approved off-platform payment settles it', async () => {
+      const { cm, client, vendorUser, quote } = await seedAcceptedMilestoneQuote();
       const quoteId = (quote._id as Types.ObjectId).toString();
       const milestoneId = (quote.milestones[0]._id as Types.ObjectId).toString();
 
@@ -315,17 +315,75 @@ describe('Case lifecycle overhaul (e2e)', () => {
         .set('Authorization', bearer(clientToken))
         .expect(200);
 
+      // Nobody can flip the milestone to PAID by hand any more.
       const opsFinance = await seedUser(ctx.app, Role.OPS_FINANCE);
       const { accessToken: opsToken } = getTokens(ctx.app, opsFinance);
-      const res = await request(ctx.app.getHttpServer())
+      await request(ctx.app.getHttpServer())
         .patch(`/api/quotes/${quoteId}/milestones/${milestoneId}/mark-paid`)
         .set('Authorization', bearer(opsToken))
-        .expect(200);
+        .expect(400);
 
-      const body = (res.body.data ?? res.body) as {
-        milestones: { status: string }[];
+      // The CM requests payment; the client then pays via Stripe.
+      const { accessToken: cmToken } = getTokens(ctx.app, cm);
+      const reqRes = await request(ctx.app.getHttpServer())
+        .post(`/api/quotes/${quoteId}/milestones/${milestoneId}/request-payment`)
+        .set('Authorization', bearer(cmToken))
+        .expect(201);
+      const requested = (reqRes.body.data ?? reqRes.body) as {
+        _id: string;
+        status: string;
+        purpose: string;
+        amount: number;
       };
-      expect(body.milestones[0].status).toBe(MilestoneStatus.PAID);
+      expect(requested.status).toBe('PENDING');
+      expect(requested.purpose).toBe('MILESTONE');
+      expect(requested.amount).toBe(100000);
+
+      // A second click returns the same request rather than a duplicate.
+      const again = await request(ctx.app.getHttpServer())
+        .post(`/api/quotes/${quoteId}/milestones/${milestoneId}/request-payment`)
+        .set('Authorization', bearer(cmToken))
+        .expect(201);
+      expect(((again.body.data ?? again.body) as { _id: string })._id).toBe(requested._id);
+
+      // The client paid by bank transfer instead: the CM records it, an Admin approves.
+      const offlineRes = await request(ctx.app.getHttpServer())
+        .post('/api/payments/offline-request')
+        .set('Authorization', bearer(cmToken))
+        .send({
+          caseId: quote.caseId.toString(),
+          amountInPaise: 100000,
+          purpose: 'MILESTONE',
+          method: 'BANK_TRANSFER',
+          reference: 'UTR123456',
+          description: 'Milestone payment: Advance',
+          note: 'Client is overseas and paid by wire',
+          milestoneId,
+          supersedesPaymentId: requested._id,
+        })
+        .expect(201);
+      const offline = (offlineRes.body.data ?? offlineRes.body) as { _id: string; status: string };
+      expect(offline.status).toBe('PENDING_APPROVAL');
+
+      // Not paid yet: an unapproved record settles nothing.
+      const quoteModel = ctx.app.get<Model<QuoteDocument>>(getModelToken(Quote.name));
+      let current = await quoteModel.findById(quoteId).exec();
+      expect(current!.milestones[0].status).toBe(MilestoneStatus.CLIENT_APPROVED);
+
+      const admin = await seedUser(ctx.app, Role.ADMIN);
+      await request(ctx.app.getHttpServer())
+        .post(`/api/payments/${offline._id}/offline/approve`)
+        .set('Authorization', bearer(getTokens(ctx.app, admin).accessToken))
+        .send({ note: 'Checked against bank statement' })
+        .expect(201);
+
+      // The milestone settles from the PAYMENT_CAPTURED event; give the async listener a moment.
+      for (let i = 0; i < 40; i += 1) {
+        current = await quoteModel.findById(quoteId).exec();
+        if (current!.milestones[0].status === MilestoneStatus.PAID) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      expect(current!.milestones[0].status).toBe(MilestoneStatus.PAID);
     });
 
     it('CASE_MANAGER role cannot client-approve a milestone → 403', async () => {

@@ -5,14 +5,80 @@ export type PaymentDocument = HydratedDocument<Payment>;
 
 export type PaymentStatus =
   | 'PENDING'
+  // An off-platform payment a CM has recorded that an Admin has not yet
+  // approved. Never counts as money received and is never payable by the
+  // client, so every `status === 'PENDING'` path (pay now, edit, withdraw)
+  // naturally ignores it.
+  | 'PENDING_APPROVAL'
   | 'AUTHORIZED'
   | 'CAPTURED'
   | 'REFUNDED'
-  | 'FAILED';
+  | 'FAILED'
+  // An off-platform payment an Admin declined.
+  | 'REJECTED';
 
 export type PaymentType = 'AUTH_HOLD' | 'CAPTURE' | 'REFUND';
 
-export type PaymentProvider = 'STRIPE';
+export type PaymentProvider = 'STRIPE' | 'OFFLINE';
+
+// How a CAPTURED client payment was actually settled — what the payment
+// checkpoints trust. STRIPE: confirmed by Stripe (webhook or a server-side
+// status check). OFFLINE_APPROVED: recorded outside Stripe and approved by an
+// Admin. LEGACY_MANUAL: marked paid by hand before this rule existed;
+// backfilled so cases already in flight keep their payment history.
+export type PaymentSettlement = 'STRIPE' | 'OFFLINE_APPROVED' | 'LEGACY_MANUAL';
+
+export type OfflinePaymentMethod =
+  | 'BANK_TRANSFER'
+  | 'UPI'
+  | 'CASH'
+  | 'CHEQUE'
+  | 'OTHER';
+
+export type OfflineApprovalStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+
+export class OfflinePaymentDetails {
+  @Prop({ type: String, enum: ['BANK_TRANSFER', 'UPI', 'CASH', 'CHEQUE', 'OTHER'], required: true })
+  method: OfflinePaymentMethod;
+
+  // Bank/UPI reference number, cheque number, etc.
+  @Prop({ type: String })
+  reference?: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Document' })
+  proofDocumentId?: Types.ObjectId;
+
+  // The CM's own explanation for why this was taken off-platform.
+  @Prop({ type: String })
+  note?: string;
+
+  @Prop({
+    type: String,
+    enum: ['PENDING_APPROVAL', 'APPROVED', 'REJECTED'],
+    default: 'PENDING_APPROVAL',
+  })
+  status: OfflineApprovalStatus;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  requestedBy: Types.ObjectId;
+
+  @Prop({ type: Date, required: true })
+  requestedAt: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  decidedBy?: Types.ObjectId;
+
+  @Prop({ type: Date })
+  decidedAt?: Date;
+
+  @Prop({ type: String })
+  decisionNote?: string;
+
+  // A still-unpaid Stripe request this record replaces (the client paid
+  // outside the app instead). Removed on approval so it cannot be paid twice.
+  @Prop({ type: Types.ObjectId, ref: 'Payment' })
+  supersedesPaymentId?: Types.ObjectId;
+}
 
 // Which way the money moves: the client paying the platform/CM (the
 // original, Stripe-backed flow), or the platform/CM paying a vendor for
@@ -75,11 +141,36 @@ export class Payment {
 
   @Prop({
     type: String,
-    enum: ['STRIPE'],
+    enum: ['STRIPE', 'OFFLINE'],
     default: 'STRIPE',
     index: true,
   })
   provider: PaymentProvider;
+
+  @Prop({ type: String, enum: ['STRIPE', 'OFFLINE_APPROVED', 'LEGACY_MANUAL'] })
+  settlement?: PaymentSettlement;
+
+  @Prop({
+    type: {
+      method: { type: String, enum: ['BANK_TRANSFER', 'UPI', 'CASH', 'CHEQUE', 'OTHER'], required: true },
+      reference: String,
+      proofDocumentId: { type: Types.ObjectId, ref: 'Document' },
+      note: String,
+      status: {
+        type: String,
+        enum: ['PENDING_APPROVAL', 'APPROVED', 'REJECTED'],
+        default: 'PENDING_APPROVAL',
+      },
+      requestedBy: { type: Types.ObjectId, ref: 'User', required: true },
+      requestedAt: { type: Date, required: true },
+      decidedBy: { type: Types.ObjectId, ref: 'User' },
+      decidedAt: Date,
+      decisionNote: String,
+      supersedesPaymentId: { type: Types.ObjectId, ref: 'Payment' },
+    },
+    _id: false,
+  })
+  offline?: OfflinePaymentDetails;
 
   @Prop({ type: String, unique: true, sparse: true })
   stripePaymentIntentId?: string;
@@ -95,7 +186,15 @@ export class Payment {
 
   @Prop({
     type: String,
-    enum: ['PENDING', 'AUTHORIZED', 'CAPTURED', 'REFUNDED', 'FAILED'],
+    enum: [
+      'PENDING',
+      'PENDING_APPROVAL',
+      'AUTHORIZED',
+      'CAPTURED',
+      'REFUNDED',
+      'FAILED',
+      'REJECTED',
+    ],
     default: 'PENDING',
   })
   status: PaymentStatus;

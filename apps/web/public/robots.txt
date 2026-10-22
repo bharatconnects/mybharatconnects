@@ -1,6 +1,12 @@
 User-agent: *
 Allow: /
+# Signed-in portals and one-time auth links: nothing for search engines here.
 Disallow: /admin/
+Disallow: /client/
+Disallow: /case-manager/
+Disallow: /vendor/
+Disallow: /qa/
+Disallow: /ops-finance/
 Disallow: /api/
 Disallow: /auth/oauth-callback
 Disallow: /auth/reset-password

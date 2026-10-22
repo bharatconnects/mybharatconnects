@@ -357,9 +357,10 @@ export class EmailService {
     amount: number,
     caseNumber: string,
   ): Promise<void> {
-    const formattedAmount = (amount / 100).toLocaleString('en-IN', {
+    // Payments are taken in US dollars.
+    const formattedAmount = (amount / 100).toLocaleString('en-US', {
       style: 'currency',
-      currency: 'INR',
+      currency: 'USD',
     });
     const date = new Date().toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -397,6 +398,107 @@ export class EmailService {
           A receipt is available in your dashboard. If you have any concerns about this transaction,
           please contact us immediately.
         </p>
+      `),
+    });
+  }
+
+  /** Client notice: the advance that opens their case is ready to pay. */
+  async sendAdvancePaymentRequestEmail(
+    to: string,
+    name: string,
+    details: { caseNumber: string; amount: number },
+  ): Promise<void> {
+    const amount = (details.amount / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+    await this.send({
+      to,
+      subject: `Pay your advance to open Case ${details.caseNumber} – MyBharatConnects`,
+      html: this.wrap(`
+        ${this.greeting(this.escapeHtml(name))}
+        <p style="margin:0 0 16px;color:#374151;">
+          Thank you for accepting the quote. To open your case and get work started, please pay the advance of
+          <strong>${amount}</strong> for Case <strong>${this.escapeHtml(details.caseNumber)}</strong>.
+        </p>
+        ${this.button('Pay advance', `${this.frontendUrl}/client/payments`)}
+        <p style="margin:0;color:#6b7280;font-size:13px;">
+          Your case opens as soon as the payment is confirmed.
+        </p>
+      `),
+    });
+  }
+
+  /** Admin heads-up: a case manager recorded a payment received outside Stripe and needs approval. */
+  async sendOfflinePaymentRequestEmail(
+    to: string,
+    name: string,
+    details: {
+      caseNumber: string;
+      requesterName: string;
+      amount: number;
+      method: string;
+      reference?: string;
+      note?: string;
+    },
+  ): Promise<void> {
+    const amount = (details.amount / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+    const row = (label: string, value: string) => `
+          <tr>
+            <td style="color:#6b7280;font-size:13px;padding-top:8px;">${label}</td>
+            <td style="color:#0f1a2e;font-size:13px;text-align:right;padding-top:8px;">${this.escapeHtml(value)}</td>
+          </tr>`;
+    await this.send({
+      to,
+      subject: `Approval needed: off-platform payment on Case ${details.caseNumber}`,
+      html: this.wrap(`
+        ${this.greeting(this.escapeHtml(name))}
+        <p style="margin:0 0 20px;color:#374151;">
+          ${this.escapeHtml(details.requesterName)} recorded a payment received outside Stripe.
+          It does not count towards any payment checkpoint until you approve it.
+        </p>
+        <table cellpadding="0" cellspacing="0" role="presentation"
+               style="background:#faf6ed;border:1px solid #ddd5c5;border-radius:6px;padding:16px 20px;margin:0 0 24px;width:100%;">
+          ${row('Case', details.caseNumber)}
+          ${row('Amount', amount)}
+          ${row('Method', details.method.replace(/_/g, ' '))}
+          ${details.reference ? row('Reference', details.reference) : ''}
+          ${details.note ? row('Reason', details.note) : ''}
+        </table>
+        ${this.button('Review in Payments', `${this.frontendUrl}/admin/payments`)}
+      `),
+    });
+  }
+
+  /** Tells the requesting case manager whether an Admin approved or rejected their off-platform payment. */
+  async sendOfflinePaymentDecisionEmail(
+    to: string,
+    name: string,
+    details: { caseNumber: string; amount: number; approved: boolean; note?: string },
+  ): Promise<void> {
+    const amount = (details.amount / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+    const verdict = details.approved ? 'approved' : 'rejected';
+    await this.send({
+      to,
+      subject: `Off-platform payment ${verdict}: Case ${details.caseNumber}`,
+      html: this.wrap(`
+        ${this.greeting(this.escapeHtml(name))}
+        <p style="margin:0 0 16px;color:#374151;">
+          Your off-platform payment of <strong>${amount}</strong> on Case
+          <strong>${this.escapeHtml(details.caseNumber)}</strong> was <strong>${verdict}</strong>.
+          ${
+            details.approved
+              ? 'It now counts towards the case payment checkpoints.'
+              : 'It does not count towards any payment checkpoint.'
+          }
+        </p>
+        ${details.note ? `<p style="margin:0;color:#6b7280;font-size:13px;">Admin note: ${this.escapeHtml(details.note)}</p>` : ''}
       `),
     });
   }
@@ -711,9 +813,67 @@ export class EmailService {
         ${this.greeting(name)}
         <p style="margin:0 0 16px;color:#374151;">
           Your case <strong>${caseNumber}</strong> has been completed and reviewed by your case
-          manager. Please sign in to confirm everything looks good so we can close it out.
+          manager. Please sign in to review it. If everything looks good you can confirm, and if
+          something is not right you can tell us before the case is closed.
         </p>
-        ${this.button('Review & Confirm', loginLink)}
+        ${this.button('Review your case', loginLink)}
+      `),
+    });
+  }
+
+  /** Client notice: the work is complete, with the deadline to confirm or raise an issue. */
+  async sendClosureNoticeEmail(
+    to: string,
+    name: string,
+    details: { caseNumber: string; windowEndsAt: Date },
+  ): Promise<void> {
+    const deadline = details.windowEndsAt.toLocaleString('en-IN', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+      timeZone: 'Asia/Kolkata',
+    });
+    await this.send({
+      to,
+      subject: `Your case ${details.caseNumber} is ready to close – MyBharatConnects`,
+      html: this.wrap(`
+        ${this.greeting(this.escapeHtml(name))}
+        <p style="margin:0 0 16px;color:#374151;">
+          The work on your case <strong>${this.escapeHtml(details.caseNumber)}</strong> is complete and
+          has been reviewed by your case manager.
+        </p>
+        <p style="margin:0 0 16px;color:#374151;">
+          You have until <strong>${deadline} IST</strong> to confirm everything is in order, or to tell
+          us about anything that is not right. If we do not hear about a problem by then, the case will
+          be closed.
+        </p>
+        ${this.button('Review your case', `${this.frontendUrl}/login`)}
+        <p style="margin:0;color:#6b7280;font-size:13px;">
+          Closing does not stop you contacting us afterwards at info@mybharatconnects.com.
+        </p>
+      `),
+    });
+  }
+
+  /** Case manager notice: a client raised an issue instead of accepting closure. */
+  async sendIssueRaisedEmail(
+    to: string,
+    name: string,
+    details: { caseNumber: string; clientName: string; description: string },
+  ): Promise<void> {
+    await this.send({
+      to,
+      subject: `Client raised an issue on Case ${details.caseNumber}`,
+      html: this.wrap(`
+        ${this.greeting(this.escapeHtml(name))}
+        <p style="margin:0 0 16px;color:#374151;">
+          ${this.escapeHtml(details.clientName)} raised an issue on case
+          <strong>${this.escapeHtml(details.caseNumber)}</strong> instead of accepting closure. The case is now
+          <strong>Resolution Pending</strong> and cannot be closed until the issue is resolved.
+        </p>
+        <p style="margin:0 0 20px;color:#374151;background:#faf6ed;border:1px solid #ddd5c5;border-radius:6px;padding:12px 16px;">
+          ${this.escapeHtml(details.description)}
+        </p>
+        ${this.button('Open disputes', `${this.frontendUrl}/login`)}
       `),
     });
   }

@@ -7,6 +7,7 @@ import {
 } from 'class-validator';
 import { Cluster } from '../../../common/enums/cluster.enum';
 import { Role } from '../../../common/enums/roles.enum';
+import { IsPhone } from '../../../common/validators/is-phone.validator';
 
 export class AdminUpdateUserDto {
   @IsOptional()
@@ -18,7 +19,7 @@ export class AdminUpdateUserDto {
   name?: string;
 
   @IsOptional()
-  @IsString()
+  @IsPhone()
   phone?: string | null;
 
   @IsOptional()

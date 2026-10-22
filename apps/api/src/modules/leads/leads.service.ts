@@ -28,6 +28,12 @@ export interface LeadFilters {
   assignedCaseManager?: string;
   serviceType?: ServiceType;
   cluster?: Cluster;
+  /**
+   * Hide leads whose case has reached Case Open or later: from there it is
+   * an active case, not a lead. Computed on each read, so a case moved back
+   * below Case Open brings its lead back.
+   */
+  excludeActiveCases?: boolean;
   // Set for CASE_MANAGER callers so leads a CM has hidden drop out of their
   // own list — ADMIN never sets this, so it keeps seeing everything.
   excludeHidden?: boolean;
@@ -192,6 +198,12 @@ export class LeadsService {
     }
     if (filters.excludeHidden) {
       query['isHidden'] = { $ne: true };
+    }
+    if (filters.excludeActiveCases) {
+      const activeLeadIds = await this.casesService.findLeadIdsPastLeadStage();
+      if (activeLeadIds.length > 0) {
+        query['_id'] = { $nin: activeLeadIds };
+      }
     }
 
     return this.leadModel
