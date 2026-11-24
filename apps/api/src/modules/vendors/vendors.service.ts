@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -7,7 +9,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Role } from '../../common/enums/roles.enum';
 import { CreateVendorDto } from './dto/create-vendor.dto';
+import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { Vendor, VendorDocument } from './schemas/vendor.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 export interface VendorFilters {
   city?: string;
@@ -29,17 +33,89 @@ export class VendorsService {
   constructor(
     @InjectModel(Vendor.name)
     private readonly vendorModel: Model<VendorDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
   ) {}
 
   async register(
     userId: string,
     dto: CreateVendorDto,
   ): Promise<VendorDocument> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException(`User #${userId} not found`);
+    }
+    // A business profile only makes sense for a vendor login; without this
+    // check an Admin could attach one to a client or staff account, which
+    // would never be able to see it.
+    if (user.role !== Role.VENDOR) {
+      throw new BadRequestException(
+        `${user.email} has the ${user.role} role. Change the role to VENDOR in Users before registering a business profile.`,
+      );
+    }
+    const existing = await this.vendorModel
+      .exists({ userId: new Types.ObjectId(userId) })
+      .exec();
+    if (existing) {
+      throw new ConflictException(
+        `${user.email} already has a vendor business profile`,
+      );
+    }
     const vendor = new this.vendorModel({
       ...dto,
       userId: new Types.ObjectId(userId),
     });
     return vendor.save();
+  }
+
+  /**
+   * Vendor logins that have no business profile yet, which is why they see
+   * "profile not set up" in their portal. Includes accounts whose role was
+   * changed to VENDOR after sign-up.
+   */
+  async findUnregisteredVendorUsers(): Promise<
+    { _id: Types.ObjectId; name: string; email: string; isActive: boolean }[]
+  > {
+    const registered = await this.vendorModel.distinct('userId').exec();
+    return this.userModel
+      .find({ role: Role.VENDOR, _id: { $nin: registered } })
+      .select('name email isActive')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec() as unknown as {
+      _id: Types.ObjectId;
+      name: string;
+      email: string;
+      isActive: boolean;
+    }[];
+  }
+
+  /**
+   * ADMIN edit of any vendor's business profile. isVerified is recorded
+   * against the acting admin, never a client-supplied id.
+   */
+  async adminUpdate(
+    id: string,
+    dto: UpdateVendorDto,
+    adminId: string,
+  ): Promise<VendorDocument> {
+    const vendor = await this.vendorModel.findById(id).exec();
+    if (!vendor) {
+      throw new NotFoundException(`Vendor #${id} not found`);
+    }
+    const { isVerified, ...fields } = dto;
+    for (const [k, v] of Object.entries(fields)) {
+      if (v !== undefined) (vendor as unknown as Record<string, unknown>)[k] = v;
+    }
+    if (isVerified === true && !vendor.isVerified) {
+      vendor.isVerified = true;
+      vendor.verifiedBy = new Types.ObjectId(adminId);
+    } else if (isVerified === false) {
+      vendor.isVerified = false;
+      vendor.set('verifiedBy', undefined);
+    }
+    await vendor.save();
+    return this.findById(id);
   }
 
   async findById(id: string): Promise<VendorDocument> {

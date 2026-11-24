@@ -30,6 +30,7 @@ export class AdminLayoutComponent {
       allowedRoles: [Role.ADMIN, Role.CASE_MANAGER],
     },
     { path: 'users', label: 'Users', icon: 'people', allowedRoles: [Role.ADMIN] },
+    { path: 'vendors', label: 'Vendors', icon: 'storefront', allowedRoles: [Role.ADMIN] },
     {
       path: 'leads',
       label: 'All Leads',

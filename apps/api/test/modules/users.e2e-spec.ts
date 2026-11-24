@@ -15,6 +15,26 @@ describe('Users role matrix (e2e)', () => {
     await ctx.close();
   });
 
+  describe('POST /api/users (ADMIN)', () => {
+    it('creates a user and never returns the password hash', async () => {
+      const admin = await seedUser(ctx.app, Role.ADMIN);
+      const { accessToken } = getTokens(ctx.app, admin);
+      const res = await request(ctx.app.getHttpServer())
+        .post('/api/users')
+        .set('Authorization', bearer(accessToken))
+        .send({
+          email: `created-${Date.now()}@test.local`,
+          password: 'Passw0rd!ABC',
+          name: 'Created User',
+          role: Role.VENDOR,
+        })
+        .expect(201);
+      expect(res.body.data.role).toBe(Role.VENDOR);
+      expect(res.body.data.password).toBeUndefined();
+      expect(JSON.stringify(res.body)).not.toContain('$2');
+    });
+  });
+
   describe('GET /api/users (ADMIN, CASE_MANAGER)', () => {
     it('no token → 401', async () => {
       await request(ctx.app.getHttpServer()).get('/api/users').expect(401);

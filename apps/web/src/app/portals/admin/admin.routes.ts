@@ -26,6 +26,13 @@ export const ADMIN_ROUTES: Routes = [
           import('./pages/admin-users.component').then((m) => m.AdminUsersComponent),
       },
       {
+        path: 'vendors',
+        title: 'Vendors | MyBharatConnects',
+        canActivate: [roleGuard([Role.ADMIN])],
+        loadComponent: () =>
+          import('./pages/admin-vendors.component').then((m) => m.AdminVendorsComponent),
+      },
+      {
         path: 'leads',
         title: 'All Leads | MyBharatConnects',
         canActivate: [roleGuard([Role.ADMIN])],

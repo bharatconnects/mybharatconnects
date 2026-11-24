@@ -406,7 +406,12 @@ export class VendorInvoicesComponent implements OnInit {
         this.loading = false;
       },
       error: (err: unknown) => {
-        this.errorMessage = extractApiError(err, 'Failed to load earnings').message;
+        // A vendor login with no business profile gets a 404 from these
+        // endpoints. Say what is actually wrong instead of showing a raw id.
+        this.errorMessage =
+          (err as { status?: number })?.status === 404
+            ? "Your vendor business profile isn't set up yet, so there are no earnings to show. An administrator needs to register your business details first."
+            : extractApiError(err, 'Failed to load earnings').message;
         this.loading = false;
       },
     });

@@ -54,7 +54,10 @@ export class UsersController {
     if (existing) {
       throw new BadRequestException('Email already registered');
     }
-    return this.usersService.create(dto);
+    // save() returns every field, including the bcrypt hash that the schema
+    // hides from queries. Re-read through a normal query so it never leaves the API.
+    const created = await this.usersService.create(dto);
+    return this.usersService.findById(String(created._id));
   }
 
   @Get('me')

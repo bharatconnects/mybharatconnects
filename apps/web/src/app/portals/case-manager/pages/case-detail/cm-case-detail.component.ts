@@ -4099,6 +4099,14 @@ export class CmCaseDetailComponent implements OnInit {
     });
   }
 
+  // 18% is only the starting value. An explicit 0% has to stay 0%: `|| 18`
+  // used to turn it into 18%, so the Case Manager saw a USD 1,000 total while
+  // the client was sent USD 1,180.
+  private clientTaxOf(q: Quote): number {
+    const n = Number(q.clientTaxPercent);
+    return q.clientTaxPercent == null || !Number.isFinite(n) ? 18 : n;
+  }
+
   private clientQuoteSnapshotOf(q: Quote): string {
     return JSON.stringify({
       items: (q.clientItems ?? []).map((it) => ({
@@ -4108,7 +4116,7 @@ export class CmCaseDetailComponent implements OnInit {
         marginType: it.marginType ?? null,
         marginValue: it.marginValue ?? null,
       })),
-      tax: Number(q.clientTaxPercent) || 18,
+      tax: this.clientTaxOf(q),
     });
   }
 
@@ -4793,7 +4801,7 @@ export class CmCaseDetailComponent implements OnInit {
 
   clientQuoteTotal(q: Quote): number {
     const subtotal = this.clientQuoteSubtotal(q);
-    const taxPercent = q.clientTaxPercent ?? 18;
+    const taxPercent = this.clientTaxOf(q);
     return Math.round((subtotal + (subtotal * taxPercent) / 100) * 100) / 100;
   }
 
@@ -4824,7 +4832,7 @@ export class CmCaseDetailComponent implements OnInit {
           marginType: it.marginType,
           marginValue: it.marginValue != null ? Number(it.marginValue) : undefined,
         })),
-        taxPercent: Number(q.clientTaxPercent) || 18,
+        taxPercent: this.clientTaxOf(q),
       })
       .subscribe({
         next: (updated) => {

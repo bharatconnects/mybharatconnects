@@ -12,6 +12,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { RegisterVendorDto } from './dto/register-vendor.dto';
 import { UpdateSelfVendorDto } from './dto/update-self-vendor.dto';
+import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { VendorRoutingDto } from './dto/vendor-routing.dto';
 import { VendorFilters, VendorsService } from './vendors.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -91,10 +92,29 @@ export class VendorsController {
     });
   }
 
+  // ADMIN-facing: vendor logins with no business profile yet. Declared before
+  // ':id' so it is not read as an id.
+  @Get('unregistered-users')
+  @Roles(Role.ADMIN)
+  findUnregisteredUsers() {
+    return this.vendorsService.findUnregisteredVendorUsers();
+  }
+
   @Get(':id')
   @Roles(Role.CASE_MANAGER, Role.ADMIN)
   findById(@Param('id') id: string) {
     return this.vendorsService.findById(id);
+  }
+
+  // ADMIN-facing: edit any vendor's business profile.
+  @Patch(':id')
+  @Roles(Role.ADMIN)
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateVendorDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.vendorsService.adminUpdate(id, dto, user.userId);
   }
 
   @Patch(':id/availability')
@@ -109,7 +129,8 @@ export class VendorsController {
 
   @Patch(':id/verify')
   @Roles(Role.ADMIN)
-  verify(@Param('id') id: string, @Body('adminId') adminId: string) {
-    return this.vendorsService.verify(id, adminId);
+  verify(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    // The verifying admin is the signed-in user, not a client-supplied id.
+    return this.vendorsService.verify(id, user.userId);
   }
 }
